@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnatoDraw — お手本トレースツール（出題者用）</title>
+    <style>
+      :root {
+        --bg: #0f1b26;
+        --panel: #16293a;
+        --guide: #5b7488;
+        --ink: #ffffff;
+        --ok: #39d98a;
+        --accent: #f0a868;
+        --label: #93b2c8;
+        --danger: #e06a6a;
+      }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        margin: 0; min-height: 100%;
+        background: var(--bg); color: var(--ink);
+        font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+      }
+      header {
+        padding: 10px 14px; background: var(--panel);
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      }
+      header h1 { font-size: 15px; margin: 0; font-weight: 700; }
+      header .sub { font-size: 12px; color: var(--label); }
+      .wrap {
+        display: flex; gap: 16px; padding: 14px; align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .stage {
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+      }
+      #svg {
+        width: min(80vw, 60vh, 560px);
+        height: min(80vw, 60vh, 560px);
+        touch-action: none;
+        background: #0b141d;
+        border-radius: 12px;
+      }
+      #bg-image { pointer-events: none; }
+      .guide-path { fill: none; stroke: var(--guide); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.6; }
+      .guide-path.sel { stroke: var(--accent); opacity: 1; }
+      .live-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+      .vertex { fill: var(--accent); }
+      .label-text { fill: var(--label); font-size: 13px; opacity: 0.85; }
+      .label-dot { fill: var(--label); opacity: 0.8; }
+      .panel {
+        flex: 1; min-width: 280px; max-width: 520px;
+        background: var(--panel); border-radius: 12px; padding: 14px;
+      }
+      .panel h2 { font-size: 13px; margin: 0 0 8px; color: var(--label); font-weight: 700; }
+      .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+      label.fld { font-size: 12px; color: var(--label); display: flex; flex-direction: column; gap: 3px; }
+      input[type="text"], input[type="number"], textarea {
+        font: inherit; font-size: 13px;
+        background: #0b141d; color: var(--ink);
+        border: 1px solid #2b4157; border-radius: 6px; padding: 6px 8px;
+      }
+      textarea { width: 100%; min-height: 200px; resize: vertical; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+      button {
+        font: inherit; font-size: 13px; font-weight: 700;
+        border: none; border-radius: 8px; padding: 8px 12px;
+        background: var(--accent); color: #1a1008; cursor: pointer;
+      }
+      button.secondary { background: #2b4157; color: #cfe0ee; }
+      button.danger { background: var(--danger); color: #1a0808; }
+      .mode-btn.active { outline: 2px solid var(--ok); }
+      ul#stroke-list { list-style: none; margin: 0; padding: 0; }
+      ul#stroke-list li {
+        display: flex; gap: 6px; align-items: center;
+        padding: 6px; border-radius: 6px; margin-bottom: 4px;
+        background: #0b141d;
+      }
+      ul#stroke-list li.sel { outline: 1px solid var(--accent); }
+      ul#stroke-list li input { flex: 1; min-width: 60px; }
+      .hint { font-size: 11px; color: var(--label); margin: 4px 0; line-height: 1.5; }
+      .count { font-size: 11px; color: var(--label); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>お手本トレースツール</h1>
+      <span class="sub">画面でなぞって strokes JSON を書き出す（出題者用）</span>
+    </header>
+
+    <div class="wrap">
+      <div class="stage">
+        <svg id="svg" viewBox="0 0 1000 1000" aria-label="トレースキャンバス"></svg>
+      </div>
+
+      <div class="panel">
+        <h2>モード</h2>
+        <div class="row">
+          <button id="mode-draw" class="mode-btn active">なぞる（線を追加）</button>
+          <button id="mode-label" class="mode-btn secondary">ラベル配置</button>
+        </div>
+        <p class="hint">
+          「なぞる」: 画面を指/マウスでなぞると1本の線（stroke）として追加されます。<br />
+          「ラベル配置」: 画面をタップするとラベルを置けます（テキストを尋ねます）。
+        </p>
+
+        <h2>問題の情報</h2>
+        <div class="row">
+          <label class="fld">id<input type="text" id="meta-id" value="new-problem" /></label>
+          <label class="fld">title<input type="text" id="meta-title" value="新しい題材" /></label>
+          <label class="fld" style="width:90px">tolerance<input type="number" id="meta-tol" value="0.06" step="0.01" min="0" max="1" /></label>
+        </div>
+        <div class="row">
+          <label class="fld" style="width:120px">点の間引き距離<input type="number" id="meta-simplify" value="0.012" step="0.002" min="0" max="0.1" /></label>
+          <span class="hint" style="flex:1">指でなぞると点が多すぎるので、この距離（正規化）より近い点は間引きます。</span>
+        </div>
+
+        <h2>線の一覧 <span class="count" id="stroke-count"></span></h2>
+        <ul id="stroke-list"></ul>
+
+        <h2>読み込み / 背景</h2>
+        <div class="row">
+          <button id="btn-load-json" class="secondary">既存JSONを読み込む</button>
+          <input type="file" id="file-json" accept="application/json,.json" style="display:none" />
+          <button id="btn-load-bg" class="secondary">背景画像を敷く</button>
+          <input type="file" id="file-bg" accept="image/*" style="display:none" />
+          <button id="btn-clear-bg" class="secondary">背景を消す</button>
+        </div>
+
+        <h2>出力</h2>
+        <div class="row">
+          <button id="btn-build">JSONを生成</button>
+          <button id="btn-copy" class="secondary">コピー</button>
+          <button id="btn-download" class="secondary">ダウンロード</button>
+          <button id="btn-clear-all" class="danger">全消去</button>
+        </div>
+        <textarea id="out" spellcheck="false" placeholder="「JSONを生成」で strokes JSON がここに出ます"></textarea>
+      </div>
+    </div>
+
+    <script>
+      const VB = 1000;
+      const NS = "http://www.w3.org/2000/svg";
+      const svg = document.getElementById("svg");
+
+      let strokes = [];   // [{id,label,points:[{x,y}...]}]
+      let labels = [];    // [{text,x,y}]
+      let selectedStroke = -1;
+      let bgUrl = null;
+      let mode = "draw";  // "draw" | "label"
+
+      let drawing = false;
+      let current = [];   // 今なぞっている点列（正規化）
+
+      // ---- 座標変換 ----
+      const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
+      function eventToNorm(ev) {
+        const rect = svg.getBoundingClientRect();
+        const x = (ev.clientX - rect.left) / rect.width;
+        const y = (ev.clientY - rect.top) / rect.height;
+        return { x: clamp01(x), y: clamp01(y) };
+      }
+      const clamp01 = (v) => Math.max(0, Math.min(1, v));
+      const round3 = (v) => Math.round(v * 1000) / 1000;
+
+      // ---- 点の間引き（連続する近い点を捨てる） ----
+      function simplify(points, minDist) {
+        if (points.length <= 2) return points.slice();
+        const out = [points[0]];
+        for (let i = 1; i < points.length; i++) {
+          const last = out[out.length - 1];
+          if (Math.hypot(points[i].x - last.x, points[i].y - last.y) >= minDist) {
+            out.push(points[i]);
+          }
+        }
+        const lastPt = points[points.length - 1];
+        const lastOut = out[out.length - 1];
+        if (lastOut.x !== lastPt.x || lastOut.y !== lastPt.y) out.push(lastPt);
+        return out;
+      }
+
+      // ---- 描画 ----
+      function render() {
+        svg.innerHTML = "";
+
+        if (bgUrl) {
+          const img = document.createElementNS(NS, "image");
+          img.setAttribute("id", "bg-image");
+          img.setAttribute("x", 0); img.setAttribute("y", 0);
+          img.setAttribute("width", VB); img.setAttribute("height", VB);
+          img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          img.setAttributeNS("http://www.w3.org/1999/xlink", "href", bgUrl);
+          img.setAttribute("href", bgUrl);
+          svg.appendChild(img);
+        }
+
+        // ラベル
+        labels.forEach((l) => {
+          const dot = document.createElementNS(NS, "circle");
+          const p = toSvg(l);
+          dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y); dot.setAttribute("r", 4);
+          dot.setAttribute("class", "label-dot");
+          svg.appendChild(dot);
+          const t = document.createElementNS(NS, "text");
+          t.setAttribute("x", p.x + 8); t.setAttribute("y", p.y + 4);
+          t.setAttribute("class", "label-text");
+          t.textContent = l.text;
+          svg.appendChild(t);
+        });
+
+        // 確定した線
+        strokes.forEach((s, idx) => {
+          const path = document.createElementNS(NS, "polyline");
+          path.setAttribute("points", s.points.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
+          path.setAttribute("class", "guide-path" + (idx === selectedStroke ? " sel" : ""));
+          svg.appendChild(path);
+          // 頂点
+          s.points.forEach((pt) => {
+            const c = document.createElementNS(NS, "circle");
+            const sp = toSvg(pt);
+            c.setAttribute("cx", sp.x); c.setAttribute("cy", sp.y); c.setAttribute("r", 3);
+            c.setAttribute("class", "vertex");
+            svg.appendChild(c);
+          });
+        });
+      }
+
+      // ---- なぞり描き ----
+      let liveEl = null;
+      function liveStroke() {
+        if (!liveEl) {
+          liveEl = document.createElementNS(NS, "polyline");
+          liveEl.setAttribute("class", "live-path");
+          svg.appendChild(liveEl);
+        }
+        liveEl.setAttribute("points", current.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
+      }
+
+      svg.addEventListener("pointerdown", (ev) => {
+        if (mode === "label") {
+          const p = eventToNorm(ev);
+          const text = prompt("ラベルのテキスト", "");
+          if (text) { labels.push({ text, x: round3(p.x), y: round3(p.y) }); render(); }
+          return;
+        }
+        drawing = true;
+        svg.setPointerCapture(ev.pointerId);
+        current = [eventToNorm(ev)];
+        liveStroke();
+      });
+      svg.addEventListener("pointermove", (ev) => {
+        if (!drawing) return;
+        current.push(eventToNorm(ev));
+        liveStroke();
+      });
+      function endStroke() {
+        if (!drawing) return;
+        drawing = false;
+        if (liveEl) { liveEl.remove(); liveEl = null; }
+        const minDist = parseFloat(document.getElementById("meta-simplify").value) || 0.012;
+        const simplified = simplify(current, minDist).map((p) => ({ x: round3(p.x), y: round3(p.y) }));
+        current = [];
+        if (simplified.length >= 2) {
+          const n = strokes.length + 1;
+          strokes.push({ id: "stroke-" + n, label: "線" + n, points: simplified });
+          selectedStroke = strokes.length - 1;
+          refreshList();
+          render();
+        }
+      }
+      svg.addEventListener("pointerup", endStroke);
+      svg.addEventListener("pointercancel", endStroke);
+
+      // ---- 線の一覧UI ----
+      function refreshList() {
+        const ul = document.getElementById("stroke-list");
+        ul.innerHTML = "";
+        strokes.forEach((s, idx) => {
+          const li = document.createElement("li");
+          if (idx === selectedStroke) li.className = "sel";
+          const id = document.createElement("input");
+          id.type = "text"; id.value = s.id; id.title = "id";
+          id.addEventListener("input", () => { s.id = id.value; });
+          const label = document.createElement("input");
+          label.type = "text"; label.value = s.label; label.title = "label";
+          label.addEventListener("input", () => { s.label = label.value; });
+          const pts = document.createElement("span");
+          pts.className = "count"; pts.textContent = s.points.length + "点";
+          const sel = document.createElement("button");
+          sel.className = "secondary"; sel.textContent = "選択";
+          sel.addEventListener("click", () => { selectedStroke = idx; refreshList(); render(); });
+          const del = document.createElement("button");
+          del.className = "danger"; del.textContent = "削除";
+          del.addEventListener("click", () => {
+            strokes.splice(idx, 1);
+            if (selectedStroke >= strokes.length) selectedStroke = strokes.length - 1;
+            refreshList(); render();
+          });
+          li.append(id, label, pts, sel, del);
+          ul.appendChild(li);
+        });
+        document.getElementById("stroke-count").textContent =
+          strokes.length ? `(${strokes.length}本)` : "";
+      }
+
+      // ---- モード切替 ----
+      function setMode(m) {
+        mode = m;
+        document.getElementById("mode-draw").classList.toggle("active", m === "draw");
+        document.getElementById("mode-label").classList.toggle("active", m === "label");
+        document.getElementById("mode-draw").classList.toggle("secondary", m !== "draw");
+        document.getElementById("mode-label").classList.toggle("secondary", m !== "label");
+      }
+      document.getElementById("mode-draw").addEventListener("click", () => setMode("draw"));
+      document.getElementById("mode-label").addEventListener("click", () => setMode("label"));
+
+      // ---- JSON生成 ----
+      function build() {
+        const problem = {
+          id: document.getElementById("meta-id").value || "new-problem",
+          level: 1,
+          title: document.getElementById("meta-title").value || "新しい題材",
+          viewBox: { w: 1, h: 1 },
+          guide: { labels: labels.map((l) => ({ text: l.text, x: l.x, y: l.y })) },
+          strokes: strokes.map((s, i) => ({
+            id: s.id || "stroke-" + (i + 1),
+            label: s.label || "線" + (i + 1),
+            order: i + 1,
+            points: s.points.map((p) => ({ x: p.x, y: p.y })),
+          })),
+          tolerance: parseFloat(document.getElementById("meta-tol").value) || 0.06,
+        };
+        document.getElementById("out").value = JSON.stringify(problem, null, 2);
+        return problem;
+      }
+
+      // ---- 既存JSON読み込み ----
+      function loadFromProblem(p) {
+        strokes = (p.strokes || []).map((s, i) => ({
+          id: s.id || "stroke-" + (i + 1),
+          label: s.label || "線" + (i + 1),
+          points: (s.points || []).map((pt) => ({ x: pt.x, y: pt.y })),
+        }));
+        labels = (p.guide?.labels || []).map((l) => ({ text: l.text, x: l.x, y: l.y }));
+        if (p.id) document.getElementById("meta-id").value = p.id;
+        if (p.title) document.getElementById("meta-title").value = p.title;
+        if (p.tolerance != null) document.getElementById("meta-tol").value = p.tolerance;
+        selectedStroke = strokes.length - 1;
+        refreshList(); render();
+      }
+
+      // ---- ボタン配線 ----
+      document.getElementById("btn-build").addEventListener("click", build);
+      document.getElementById("btn-copy").addEventListener("click", async () => {
+        const text = document.getElementById("out").value || JSON.stringify(build(), null, 2);
+        try { await navigator.clipboard.writeText(text); alert("コピーしました"); }
+        catch { document.getElementById("out").select(); }
+      });
+      document.getElementById("btn-download").addEventListener("click", () => {
+        const p = build();
+        const blob = new Blob([JSON.stringify(p, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = (p.id || "problem") + ".json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+      document.getElementById("btn-clear-all").addEventListener("click", () => {
+        if (!confirm("線・ラベルをすべて消します。よろしいですか？")) return;
+        strokes = []; labels = []; selectedStroke = -1;
+        document.getElementById("out").value = "";
+        refreshList(); render();
+      });
+
+      document.getElementById("btn-load-json").addEventListener("click", () =>
+        document.getElementById("file-json").click());
+      document.getElementById("file-json").addEventListener("change", (ev) => {
+        const f = ev.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try { loadFromProblem(JSON.parse(r.result)); }
+          catch (e) { alert("JSONの読み込みに失敗: " + e.message); }
+        };
+        r.readAsText(f);
+        ev.target.value = "";
+      });
+
+      document.getElementById("btn-load-bg").addEventListener("click", () =>
+        document.getElementById("file-bg").click());
+      document.getElementById("file-bg").addEventListener("change", (ev) => {
+        const f = ev.target.files[0]; if (!f) return;
+        if (bgUrl) URL.revokeObjectURL(bgUrl);
+        bgUrl = URL.createObjectURL(f);
+        render();
+        ev.target.value = "";
+      });
+      document.getElementById("btn-clear-bg").addEventListener("click", () => {
+        if (bgUrl) URL.revokeObjectURL(bgUrl);
+        bgUrl = null; render();
+      });
+
+      // 初期描画
+      refreshList();
+      render();
+    </script>
+  </body>
+</html>

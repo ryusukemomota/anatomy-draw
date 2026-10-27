@@ -1,0 +1,6 @@
+{
+  "problems": [
+    { "id": "aortic-arch", "title": "大動脈弓の分枝", "file": "data/aortic-arch.json" },
+    { "id": "abdominal-aorta", "title": "腹大動脈の主要分枝", "file": "data/abdominal-aorta.json" }
+  ]
+}

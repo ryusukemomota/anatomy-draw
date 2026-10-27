@@ -28,6 +28,11 @@
       }
       header h1 { font-size: 15px; margin: 0; font-weight: 700; }
       header .title-sub { font-size: 12px; color: var(--label); }
+      header #problem-select {
+        margin-left: auto; font: inherit; font-size: 13px;
+        background: #2b4157; color: #cfe0ee;
+        border: none; border-radius: 8px; padding: 6px 10px;
+      }
       .stage {
         flex: 1; position: relative;
         display: flex; align-items: center; justify-content: center;
@@ -65,6 +70,7 @@
     <header>
       <h1 id="title">読み込み中…</h1>
       <span class="title-sub" id="subtitle"></span>
+      <select id="problem-select" aria-label="題材を選ぶ"></select>
     </header>
 
     <div class="stage">
@@ -80,7 +86,7 @@
 
     <script>
       // ============ 設定 ============
-      const PROBLEM_URL = "data/aortic-arch.json";
+      const MANIFEST_URL = "data/manifest.json"; // 題材一覧
       const VB = 1000; // SVG viewBox の一辺（正規化0-1 → 0..1000 に変換）
 
       const svg = document.getElementById("svg");
@@ -94,18 +100,44 @@
       // ---- 正規化(0-1) → SVG座標(0..1000) ----
       const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
 
-      // ---- 問題読み込み ----
-      async function load() {
+      // ---- 題材一覧（マニフェスト）を読んでセレクタを作る ----
+      async function loadManifest() {
+        const sel = document.getElementById("problem-select");
         try {
-          const res = await fetch(PROBLEM_URL);
+          const res = await fetch(MANIFEST_URL);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const manifest = await res.json();
+          const list = manifest.problems || [];
+          if (list.length === 0) throw new Error("題材が空です");
+          sel.innerHTML = "";
+          list.forEach((p) => {
+            const opt = document.createElement("option");
+            opt.value = p.file;
+            opt.textContent = p.title || p.id;
+            sel.appendChild(opt);
+          });
+          sel.addEventListener("change", () => loadProblem(sel.value));
+          await loadProblem(list[0].file);
+        } catch (e) {
+          document.getElementById("title").textContent = "題材一覧の読み込み失敗";
+          document.getElementById("msg").textContent =
+            "ローカルサーバーで開いてください（例: python3 -m http.server）。詳細: " + e.message;
+        }
+      }
+
+      // ---- 問題（1題材）を読み込む ----
+      async function loadProblem(url) {
+        try {
+          const res = await fetch(url);
           if (!res.ok) throw new Error("HTTP " + res.status);
           problem = await res.json();
         } catch (e) {
           document.getElementById("title").textContent = "JSON読み込み失敗";
           document.getElementById("msg").textContent =
-            "ローカルサーバーで開いてください（例: python3 -m http.server）。詳細: " + e.message;
+            "題材データを読めませんでした。詳細: " + e.message;
           return;
         }
+        reset();
         document.getElementById("title").textContent = problem.title || "なぞり描き";
         document.getElementById("subtitle").textContent =
           (problem.strokes?.length || 0) + " 本の線をなぞる";
@@ -263,7 +295,7 @@
       document.getElementById("btn-grade").addEventListener("click", grade);
       document.getElementById("btn-reset").addEventListener("click", reset);
 
-      load();
+      loadManifest();
     </script>
   </body>
 </html>
