@@ -20,7 +20,7 @@ Instanatomy（群衆参加型タグ付けアプリ）の姉妹。科研費 25K15
 （`file://` で直接開くと JSON が読めない）。
 
 ```bash
-cd anatomy-draw-concept   # このフォルダ
+cd anatomy-draw   # このフォルダ
 python3 -m http.server 8010
 ```
 
