@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AnatoDraw — Level 1 なぞり描き プロトタイプ</title>
+    <style>
+      :root {
+        --bg: #0f1b26;
+        --panel: #16293a;
+        --guide: #5b7488;
+        --ink: #ffffff;
+        --ok: #39d98a;
+        --accent: #f0a868;
+        --label: #93b2c8;
+      }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        margin: 0; height: 100%;
+        background: var(--bg); color: var(--ink);
+        font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+        overscroll-behavior: none;
+      }
+      body { display: flex; flex-direction: column; }
+      header {
+        padding: 10px 14px; background: var(--panel);
+        display: flex; align-items: center; gap: 10px;
+      }
+      header h1 { font-size: 15px; margin: 0; font-weight: 700; }
+      header .title-sub { font-size: 12px; color: var(--label); }
+      .stage {
+        flex: 1; position: relative;
+        display: flex; align-items: center; justify-content: center;
+        min-height: 0;
+      }
+      /* 正方形に近い描画領域を画面にフィット */
+      #svg {
+        width: min(100vw, calc(100vh - 170px));
+        height: min(100vw, calc(100vh - 170px));
+        touch-action: none; /* タッチでのスクロールを止めて描画に専念 */
+        background: #0b141d;
+        border-radius: 12px;
+      }
+      .guide-path { fill: none; stroke: var(--guide); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
+      .guide-path.done { stroke: var(--ok); opacity: 0.9; }
+      .ink-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+      .label { fill: var(--label); font-size: 13px; opacity: 0.7; }
+      footer {
+        padding: 10px 14px; background: var(--panel);
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      }
+      button {
+        font: inherit; font-size: 14px; font-weight: 700;
+        border: none; border-radius: 8px; padding: 10px 16px;
+        background: var(--accent); color: #1a1008;
+      }
+      button.secondary { background: #2b4157; color: #cfe0ee; }
+      #score { font-size: 14px; color: var(--label); margin-left: auto; }
+      #score strong { font-size: 20px; }
+      .msg { font-size: 13px; }
+      .msg.ok { color: var(--ok); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 id="title">読み込み中…</h1>
+      <span class="title-sub" id="subtitle"></span>
+    </header>
+
+    <div class="stage">
+      <svg id="svg" viewBox="0 0 1000 1000" aria-label="なぞり描きキャンバス"></svg>
+    </div>
+
+    <footer>
+      <button id="btn-grade">採点</button>
+      <button id="btn-reset" class="secondary">やり直す</button>
+      <span class="msg" id="msg"></span>
+      <span id="score"></span>
+    </footer>
+
+    <script>
+      // ============ 設定 ============
+      const PROBLEM_URL = "data/aortic-arch.json";
+      const VB = 1000; // SVG viewBox の一辺（正規化0-1 → 0..1000 に変換）
+
+      const svg = document.getElementById("svg");
+      const NS = "http://www.w3.org/2000/svg";
+
+      let problem = null;        // 問題データ
+      let drawnPoints = [];      // 学習者が今なぞっている軌跡（正規化座標）
+      let allDrawn = [];         // 確定した全軌跡（複数ストローク可）
+      let drawing = false;
+
+      // ---- 正規化(0-1) → SVG座標(0..1000) ----
+      const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
+
+      // ---- 問題読み込み ----
+      async function load() {
+        try {
+          const res = await fetch(PROBLEM_URL);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          problem = await res.json();
+        } catch (e) {
+          document.getElementById("title").textContent = "JSON読み込み失敗";
+          document.getElementById("msg").textContent =
+            "ローカルサーバーで開いてください（例: python3 -m http.server）。詳細: " + e.message;
+          return;
+        }
+        document.getElementById("title").textContent = problem.title || "なぞり描き";
+        document.getElementById("subtitle").textContent =
+          (problem.strokes?.length || 0) + " 本の線をなぞる";
+        render();
+      }
+
+      // ---- 描画（お手本＋ラベル） ----
+      function render() {
+        svg.innerHTML = "";
+
+        // ラベル（薄く）
+        (problem.guide?.labels || []).forEach((l) => {
+          const t = document.createElementNS(NS, "text");
+          const p = toSvg(l);
+          t.setAttribute("x", p.x); t.setAttribute("y", p.y);
+          t.setAttribute("class", "label");
+          t.setAttribute("text-anchor", "middle");
+          t.textContent = l.text;
+          svg.appendChild(t);
+        });
+
+        // お手本の線（薄く）
+        problem.strokes.forEach((s) => {
+          const path = document.createElementNS(NS, "polyline");
+          path.setAttribute("points", s.points.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
+          path.setAttribute("class", "guide-path");
+          path.dataset.strokeId = s.id;
+          svg.appendChild(path);
+        });
+      }
+
+      // ---- ポインタ座標 → 正規化座標 ----
+      function eventToNorm(ev) {
+        const rect = svg.getBoundingClientRect();
+        const x = (ev.clientX - rect.left) / rect.width;
+        const y = (ev.clientY - rect.top) / rect.height;
+        return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+      }
+
+      // ---- なぞり描き（Pointer Events: タッチ/マウス両対応） ----
+      svg.addEventListener("pointerdown", (ev) => {
+        if (!problem) return;
+        drawing = true;
+        svg.setPointerCapture(ev.pointerId);
+        drawnPoints = [eventToNorm(ev)];
+        liveStroke();
+      });
+      svg.addEventListener("pointermove", (ev) => {
+        if (!drawing) return;
+        drawnPoints.push(eventToNorm(ev));
+        liveStroke();
+      });
+      function endStroke() {
+        if (!drawing) return;
+        drawing = false;
+        if (drawnPoints.length > 1) allDrawn.push(drawnPoints.slice());
+        drawnPoints = [];
+      }
+      svg.addEventListener("pointerup", endStroke);
+      svg.addEventListener("pointercancel", endStroke);
+      svg.addEventListener("pointerleave", endStroke);
+
+      let liveEl = null;
+      function liveStroke() {
+        if (!liveEl) {
+          liveEl = document.createElementNS(NS, "polyline");
+          liveEl.setAttribute("class", "ink-path");
+          svg.appendChild(liveEl);
+        }
+        liveEl.setAttribute("points", drawnPoints.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
+        if (!drawing) liveEl = null;
+      }
+
+      // ============ 採点（L1-4 仕様: 甘め） ============
+      // 点と線分の距離（正規化座標）
+      function distPointToSeg(p, a, b) {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len2 = dx * dx + dy * dy;
+        let t = len2 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const cx = a.x + t * dx, cy = a.y + t * dy;
+        return Math.hypot(p.x - cx, p.y - cy);
+      }
+      // 点から「学習者の全軌跡（線分列）」への最短距離
+      function distToDrawn(p) {
+        let min = Infinity;
+        for (const stroke of allDrawn) {
+          for (let i = 0; i < stroke.length - 1; i++) {
+            const d = distPointToSeg(p, stroke[i], stroke[i + 1]);
+            if (d < min) min = d;
+          }
+        }
+        return min;
+      }
+      // お手本の線を一定間隔でサンプリング
+      function sampleStroke(points, n = 40) {
+        // 累積長
+        let total = 0; const segLen = [];
+        for (let i = 0; i < points.length - 1; i++) {
+          const d = Math.hypot(points[i+1].x - points[i].x, points[i+1].y - points[i].y);
+          segLen.push(d); total += d;
+        }
+        const out = [];
+        for (let k = 0; k <= n; k++) {
+          const target = (total * k) / n;
+          let acc = 0, idx = 0;
+          while (idx < segLen.length && acc + segLen[idx] < target) { acc += segLen[idx]; idx++; }
+          if (idx >= segLen.length) { out.push(points[points.length - 1]); continue; }
+          const t = segLen[idx] ? (target - acc) / segLen[idx] : 0;
+          out.push({
+            x: points[idx].x + t * (points[idx+1].x - points[idx].x),
+            y: points[idx].y + t * (points[idx+1].y - points[idx].y),
+          });
+        }
+        return out;
+      }
+
+      function grade() {
+        if (!problem) return;
+        if (allDrawn.length === 0) {
+          setMsg("まず線をなぞってください", false);
+          return;
+        }
+        const tol = problem.tolerance ?? 0.06;
+        let coverSum = 0;
+        problem.strokes.forEach((s) => {
+          const samples = sampleStroke(s.points, 40);
+          const covered = samples.filter((pt) => distToDrawn(pt) <= tol).length;
+          const cover = covered / samples.length;
+          coverSum += cover;
+          // お手本をカバー率で色付け（70%以上で done）
+          const el = svg.querySelector(`[data-stroke-id="${s.id}"]`);
+          if (el) el.classList.toggle("done", cover >= 0.7);
+        });
+        const score = Math.round((coverSum / problem.strokes.length) * 100);
+        document.getElementById("score").innerHTML = `スコア <strong>${score}</strong>%`;
+        if (score >= 70) setMsg("よくなぞれました！", true);
+        else if (score >= 40) setMsg("おしい！もう少し線に沿ってみよう", false);
+        else setMsg("お手本の線をなぞってみよう", false);
+      }
+
+      function setMsg(text, ok) {
+        const m = document.getElementById("msg");
+        m.textContent = text;
+        m.className = "msg" + (ok ? " ok" : "");
+      }
+
+      function reset() {
+        allDrawn = []; drawnPoints = []; liveEl = null;
+        document.getElementById("score").textContent = "";
+        setMsg("", false);
+        render();
+      }
+
+      document.getElementById("btn-grade").addEventListener("click", grade);
+      document.getElementById("btn-reset").addEventListener("click", reset);
+
+      load();
+    </script>
+  </body>
+</html>
