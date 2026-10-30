@@ -101,7 +101,8 @@
         </div>
         <p class="hint">
           「なぞる」: 画面を指/マウスでなぞると1本の線（stroke）として追加されます。<br />
-          「ラベル配置」: 画面をタップするとラベルを置けます（テキストを尋ねます）。
+          「ラベル配置」: 画面をタップするとラベルを置けます（テキストを尋ねます）。<br />
+          置いたラベルは下の「ラベルの一覧」でテキストの修正・削除ができます。
         </p>
 
         <h2>問題の情報</h2>
@@ -117,6 +118,9 @@
 
         <h2>線の一覧 <span class="count" id="stroke-count"></span></h2>
         <ul id="stroke-list"></ul>
+
+        <h2>ラベルの一覧 <span class="count" id="label-count"></span></h2>
+        <ul id="label-list"></ul>
 
         <h2>読み込み / 背景</h2>
         <div class="row">
@@ -240,7 +244,7 @@
         if (mode === "label") {
           const p = eventToNorm(ev);
           const text = prompt("ラベルのテキスト", "");
-          if (text) { labels.push({ text, x: round3(p.x), y: round3(p.y) }); render(); }
+          if (text) { labels.push({ text, x: round3(p.x), y: round3(p.y) }); refreshLabels(); render(); }
           return;
         }
         drawing = true;
@@ -303,6 +307,31 @@
           strokes.length ? `(${strokes.length}本)` : "";
       }
 
+      // ---- ラベルの一覧UI ----
+      function refreshLabels() {
+        const ul = document.getElementById("label-list");
+        ul.innerHTML = "";
+        labels.forEach((l, idx) => {
+          const li = document.createElement("li");
+          const text = document.createElement("input");
+          text.type = "text"; text.value = l.text; text.title = "ラベルのテキスト";
+          text.addEventListener("input", () => { l.text = text.value; render(); });
+          const pos = document.createElement("span");
+          pos.className = "count";
+          pos.textContent = `(${l.x}, ${l.y})`;
+          const del = document.createElement("button");
+          del.className = "danger"; del.textContent = "削除";
+          del.addEventListener("click", () => {
+            labels.splice(idx, 1);
+            refreshLabels(); render();
+          });
+          li.append(text, pos, del);
+          ul.appendChild(li);
+        });
+        document.getElementById("label-count").textContent =
+          labels.length ? `(${labels.length}個)` : "";
+      }
+
       // ---- モード切替 ----
       function setMode(m) {
         mode = m;
@@ -346,7 +375,7 @@
         if (p.title) document.getElementById("meta-title").value = p.title;
         if (p.tolerance != null) document.getElementById("meta-tol").value = p.tolerance;
         selectedStroke = strokes.length - 1;
-        refreshList(); render();
+        refreshList(); refreshLabels(); render();
       }
 
       // ---- ボタン配線 ----
@@ -369,7 +398,7 @@
         if (!confirm("線・ラベルをすべて消します。よろしいですか？")) return;
         strokes = []; labels = []; selectedStroke = -1;
         document.getElementById("out").value = "";
-        refreshList(); render();
+        refreshList(); refreshLabels(); render();
       });
 
       document.getElementById("btn-load-json").addEventListener("click", () =>
@@ -401,6 +430,7 @@
 
       // 初期描画
       refreshList();
+      refreshLabels();
       render();
     </script>
   </body>
