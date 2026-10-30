@@ -1,6 +1,8 @@
 {
   "problems": [
     { "id": "aortic-arch", "title": "大動脈弓の分枝", "file": "data/aortic-arch.json" },
-    { "id": "abdominal-aorta", "title": "腹大動脈の主要分枝", "file": "data/abdominal-aorta.json" }
+    { "id": "abdominal-aorta", "title": "腹大動脈の主要分枝", "file": "data/abdominal-aorta.json" },
+    { "id": "aorta-iliac", "title": "大動脈から総腸骨動脈", "file": "data/aorta-iliac.json" },
+    { "id": "iliac-artery", "title": "総腸骨動脈", "file": "data/iliac-artery.json" }
   ]
 }
