@@ -50,6 +50,13 @@
       .guide-path.done { stroke: var(--ok); opacity: 0.9; }
       .ink-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
       .label { fill: var(--label); font-size: 13px; opacity: 0.7; }
+
+      /* ガイドの濃さ3段階（線の濃さを調整。ラベルは位置の手がかりとして常に残す） */
+      #svg.guide-faint .guide-path { opacity: 0.22; }
+      #svg.guide-off .guide-path { opacity: 0; }
+      /* 採点後は、ガイドなしでもお手本の形を結果色で表示（ラベルは出さない） */
+      #svg.guide-off.graded .guide-path { opacity: 0.5; }
+      #svg.guide-off.graded .guide-path.done { opacity: 0.9; }
       footer {
         padding: 10px 14px; background: var(--panel);
         display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -80,6 +87,7 @@
     <footer>
       <button id="btn-grade">採点</button>
       <button id="btn-reset" class="secondary">やり直す</button>
+      <button id="btn-guide" class="secondary" title="お手本の濃さを切り替え">ガイド: 濃い</button>
       <span class="msg" id="msg"></span>
       <span id="score"></span>
     </footer>
@@ -96,6 +104,22 @@
       let drawnPoints = [];      // 学習者が今なぞっている軌跡（正規化座標）
       let allDrawn = [];         // 確定した全軌跡（複数ストローク可）
       let drawing = false;
+
+      // ガイドの濃さ: full（濃い）→ faint（薄い）→ off（なし）の3段階
+      const GUIDE_LEVELS = ["full", "faint", "off"];
+      const GUIDE_LABELS = { full: "ガイド: 濃い", faint: "ガイド: 薄い", off: "ガイド: なし" };
+      let guideLevel = "full";
+      function applyGuideLevel() {
+        svg.classList.remove("guide-full", "guide-faint", "guide-off");
+        svg.classList.add("guide-" + guideLevel);
+        const btn = document.getElementById("btn-guide");
+        if (btn) btn.textContent = GUIDE_LABELS[guideLevel];
+      }
+      function cycleGuideLevel() {
+        const i = GUIDE_LEVELS.indexOf(guideLevel);
+        guideLevel = GUIDE_LEVELS[(i + 1) % GUIDE_LEVELS.length];
+        applyGuideLevel();
+      }
 
       // ---- 正規化(0-1) → SVG座標(0..1000) ----
       const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
@@ -147,6 +171,8 @@
       // ---- 描画（お手本＋ラベル） ----
       function render() {
         svg.innerHTML = "";
+        svg.classList.remove("graded"); // 再描画で採点結果表示を解除
+        applyGuideLevel();
 
         // ラベル（薄く）
         (problem.guide?.labels || []).forEach((l) => {
@@ -167,6 +193,25 @@
           path.dataset.strokeId = s.id;
           svg.appendChild(path);
         });
+
+        // 学習者がこれまでに描いた軌跡を上に描く
+        renderInk();
+      }
+
+      // ---- 学習者の軌跡（確定分＋描画中）をすべて描く ----
+      function renderInk() {
+        // 既存の ink 要素を消してから描き直す（重複防止）
+        svg.querySelectorAll(".ink-path").forEach((el) => el.remove());
+        const strokesToDraw = drawing && drawnPoints.length > 1
+          ? allDrawn.concat([drawnPoints])
+          : allDrawn;
+        strokesToDraw.forEach((stroke) => {
+          if (stroke.length < 1) return;
+          const path = document.createElementNS(NS, "polyline");
+          path.setAttribute("points", stroke.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
+          path.setAttribute("class", "ink-path");
+          svg.appendChild(path);
+        });
       }
 
       // ---- ポインタ座標 → 正規化座標 ----
@@ -183,33 +228,23 @@
         drawing = true;
         svg.setPointerCapture(ev.pointerId);
         drawnPoints = [eventToNorm(ev)];
-        liveStroke();
+        renderInk();
       });
       svg.addEventListener("pointermove", (ev) => {
         if (!drawing) return;
         drawnPoints.push(eventToNorm(ev));
-        liveStroke();
+        renderInk();
       });
       function endStroke() {
         if (!drawing) return;
         drawing = false;
         if (drawnPoints.length > 1) allDrawn.push(drawnPoints.slice());
         drawnPoints = [];
+        renderInk(); // 確定した軌跡を含めて描き直す（前の線も残る）
       }
       svg.addEventListener("pointerup", endStroke);
       svg.addEventListener("pointercancel", endStroke);
       svg.addEventListener("pointerleave", endStroke);
-
-      let liveEl = null;
-      function liveStroke() {
-        if (!liveEl) {
-          liveEl = document.createElementNS(NS, "polyline");
-          liveEl.setAttribute("class", "ink-path");
-          svg.appendChild(liveEl);
-        }
-        liveEl.setAttribute("points", drawnPoints.map(toSvg).map((p) => `${p.x},${p.y}`).join(" "));
-        if (!drawing) liveEl = null;
-      }
 
       // ============ 採点（L1-4 仕様: 甘め） ============
       // 点と線分の距離（正規化座標）
@@ -272,6 +307,8 @@
           const el = svg.querySelector(`[data-stroke-id="${s.id}"]`);
           if (el) el.classList.toggle("done", cover >= 0.7);
         });
+        // ガイドなしモードでも、採点後はお手本の形を結果色で見せる
+        svg.classList.add("graded");
         const score = Math.round((coverSum / problem.strokes.length) * 100);
         document.getElementById("score").innerHTML = `スコア <strong>${score}</strong>%`;
         if (score >= 70) setMsg("よくなぞれました！", true);
@@ -286,7 +323,7 @@
       }
 
       function reset() {
-        allDrawn = []; drawnPoints = []; liveEl = null;
+        allDrawn = []; drawnPoints = []; drawing = false;
         document.getElementById("score").textContent = "";
         setMsg("", false);
         render();
@@ -294,7 +331,9 @@
 
       document.getElementById("btn-grade").addEventListener("click", grade);
       document.getElementById("btn-reset").addEventListener("click", reset);
+      document.getElementById("btn-guide").addEventListener("click", cycleGuideLevel);
 
+      applyGuideLevel();
       loadManifest();
     </script>
   </body>
