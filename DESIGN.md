@@ -162,7 +162,8 @@
 
 リポジトリ: <https://github.com/ryusukemomota/nanatex>（Network of Anatomical Texts）
 
-出典: ミシガン大学 医学部の解剖テーブルを元に、Thomas R. Gest 教授の許諾を得て作成。
+出典: ミシガン大学 医学部の Thomas R. Gest 教授の解剖テーブル（Table Data）を許諾のもと使用し、
+百田 龍輔がデータの整理（クリーンアップ）と目視での追加を行って作成。
 WHO標準経穴位置のランドマークも追加済み。**派生利用時は出典明記が必要。**
 
 ### 中身（master ブランチ）
