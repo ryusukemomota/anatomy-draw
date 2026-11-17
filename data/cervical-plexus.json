@@ -1,0 +1,147 @@
+{
+  "id": "cervical-plexus",
+  "level": 2,
+  "title": "頸神経叢",
+  "description": "C1–C5 から出る主要な枝をつなぐ（横隔神経は C3–C5）（下書き・要確認）。",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "c1",
+      "label": "C1",
+      "x": 0.16,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "c2",
+      "label": "C2",
+      "x": 0.33,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "c3",
+      "label": "C3",
+      "x": 0.5,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "c4",
+      "label": "C4",
+      "x": 0.67,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "c5",
+      "label": "C5",
+      "x": 0.84,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "lesser-occipital",
+      "label": "小後頭神経",
+      "x": 0.08,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "great-auricular",
+      "label": "大耳介神経",
+      "x": 0.24,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "transverse-cervical",
+      "label": "頸横神経",
+      "x": 0.4,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "ansa",
+      "label": "頸神経ワナ",
+      "x": 0.56,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "supraclavicular",
+      "label": "鎖骨上神経",
+      "x": 0.72,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "phrenic",
+      "label": "横隔神経",
+      "x": 0.9,
+      "y": 0.75,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "c2",
+      "to": "lesser-occipital"
+    },
+    {
+      "from": "c3",
+      "to": "lesser-occipital"
+    },
+    {
+      "from": "c2",
+      "to": "great-auricular"
+    },
+    {
+      "from": "c3",
+      "to": "great-auricular"
+    },
+    {
+      "from": "c2",
+      "to": "transverse-cervical"
+    },
+    {
+      "from": "c3",
+      "to": "transverse-cervical"
+    },
+    {
+      "from": "c1",
+      "to": "ansa"
+    },
+    {
+      "from": "c2",
+      "to": "ansa"
+    },
+    {
+      "from": "c3",
+      "to": "ansa"
+    },
+    {
+      "from": "c3",
+      "to": "supraclavicular"
+    },
+    {
+      "from": "c4",
+      "to": "supraclavicular"
+    },
+    {
+      "from": "c3",
+      "to": "phrenic"
+    },
+    {
+      "from": "c4",
+      "to": "phrenic"
+    },
+    {
+      "from": "c5",
+      "to": "phrenic"
+    }
+  ]
+}

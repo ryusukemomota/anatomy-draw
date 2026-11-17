@@ -51,6 +51,7 @@
       .edge.ok { stroke: var(--ok); }
       .edge.bad { stroke: var(--bad); }
       .edge.missing { stroke: #8aa0b2; stroke-dasharray: 10 10; opacity: 0.8; }
+      .edge.hint { stroke: #5b7488; stroke-width: 6; opacity: 0.35; }
       .node { cursor: pointer; stroke: #0b141d; stroke-width: 3; }
       .node.root { fill: #7aa7d9; }
       .node.trunk { fill: #8fd0a8; }
@@ -90,6 +91,7 @@
       <button id="btn-grade">採点</button>
       <button id="btn-undo" class="secondary">1つ戻す</button>
       <button id="btn-reset" class="secondary">やり直す</button>
+      <button id="btn-guide" class="secondary" title="ヒントの量を切り替え">ガイド: 濃い</button>
       <span class="msg" id="msg"></span>
       <span id="score"></span>
     </footer>
@@ -109,6 +111,16 @@
       let userEdges = [];  // [[idA, idB], ...] 学習者が引いたエッジ
       let selected = null; // 選択中のノードid
       let graded = null;   // 採点結果 {ok:Set, bad:Set, missing:Set}
+
+      // ガイド: full（正解エッジを薄く表示）→ faint（エッジなし）→ off（ラベルは選択ノードだけ）
+      const GUIDE_LEVELS = ["full", "faint", "off"];
+      const GUIDE_LABELS = { full: "ガイド: 濃い", faint: "ガイド: 薄い", off: "ガイド: なし" };
+      let guideLevel = "full";
+      function cycleGuideLevel() {
+        guideLevel = GUIDE_LEVELS[(GUIDE_LEVELS.indexOf(guideLevel) + 1) % GUIDE_LEVELS.length];
+        document.getElementById("btn-guide").textContent = GUIDE_LABELS[guideLevel];
+        render();
+      }
 
       const key = (a, b) => [a, b].sort().join("|");
       const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
@@ -168,6 +180,10 @@
       function render() {
         svg.innerHTML = "";
 
+        // ガイド「濃い」: 正解エッジを薄く表示（採点前のみ）
+        if (guideLevel === "full" && !graded) {
+          problem.edges.forEach((e) => line(e.from, e.to, "hint"));
+        }
         // 不足していたエッジ（採点後のみ、答えとして点線で表示）
         if (graded) {
           problem.edges.forEach((e) => {
@@ -190,11 +206,14 @@
           c.addEventListener("pointerdown", (ev) => { ev.preventDefault(); onNode(n.id); });
           svg.appendChild(c);
 
-          const t = document.createElementNS(NS, "text");
-          t.setAttribute("x", p.x); t.setAttribute("y", p.y + 56);
-          t.setAttribute("class", "node-label");
-          t.textContent = n.label;
-          svg.appendChild(t);
+          // ガイド「なし」: ラベルは選択中のノードと採点後だけ表示
+          if (guideLevel !== "off" || n.id === selected || graded) {
+            const t = document.createElementNS(NS, "text");
+            t.setAttribute("x", p.x); t.setAttribute("y", p.y + 56);
+            t.setAttribute("class", "node-label");
+            t.textContent = n.label;
+            svg.appendChild(t);
+          }
         });
       }
 
@@ -269,6 +288,7 @@
       document.getElementById("btn-grade").addEventListener("click", grade);
       document.getElementById("btn-undo").addEventListener("click", undo);
       document.getElementById("btn-reset").addEventListener("click", reset);
+      document.getElementById("btn-guide").addEventListener("click", cycleGuideLevel);
 
       loadManifest();
     </script>

@@ -1,0 +1,132 @@
+{
+  "id": "lumbar-plexus",
+  "level": 2,
+  "title": "腰神経叢",
+  "description": "L1–L4 の前枝から出る主要な枝をつなぐ（下書き・要確認）。",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "l1",
+      "label": "L1",
+      "x": 0.2,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "l2",
+      "label": "L2",
+      "x": 0.4,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "l3",
+      "label": "L3",
+      "x": 0.6,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "l4",
+      "label": "L4",
+      "x": 0.8,
+      "y": 0.1,
+      "group": "root"
+    },
+    {
+      "id": "iliohypogastric",
+      "label": "腸骨下腹神経",
+      "x": 0.08,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "ilioinguinal",
+      "label": "腸骨鼠径神経",
+      "x": 0.24,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "genitofemoral",
+      "label": "陰部大腿神経",
+      "x": 0.4,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "lfc",
+      "label": "外側大腿皮神経",
+      "x": 0.56,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "femoral",
+      "label": "大腿神経",
+      "x": 0.72,
+      "y": 0.75,
+      "group": "branch"
+    },
+    {
+      "id": "obturator",
+      "label": "閉鎖神経",
+      "x": 0.88,
+      "y": 0.75,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "l1",
+      "to": "iliohypogastric"
+    },
+    {
+      "from": "l1",
+      "to": "ilioinguinal"
+    },
+    {
+      "from": "l1",
+      "to": "genitofemoral"
+    },
+    {
+      "from": "l2",
+      "to": "genitofemoral"
+    },
+    {
+      "from": "l2",
+      "to": "lfc"
+    },
+    {
+      "from": "l3",
+      "to": "lfc"
+    },
+    {
+      "from": "l2",
+      "to": "femoral"
+    },
+    {
+      "from": "l3",
+      "to": "femoral"
+    },
+    {
+      "from": "l4",
+      "to": "femoral"
+    },
+    {
+      "from": "l2",
+      "to": "obturator"
+    },
+    {
+      "from": "l3",
+      "to": "obturator"
+    },
+    {
+      "from": "l4",
+      "to": "obturator"
+    }
+  ]
+}

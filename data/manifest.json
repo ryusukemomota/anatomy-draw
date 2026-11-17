@@ -7,6 +7,9 @@
     { "id": "celiac-trunk", "title": "腹腔動脈", "file": "data/celiac-trunk.json" },
     { "id": "external-carotid", "title": "外頸動脈", "file": "data/external-carotid.json" },
     { "id": "right-subclavian", "title": "右鎖骨下動脈", "file": "data/right-subclavian.json" },
-    { "id": "brachial-plexus", "level": 2, "title": "腕神経叢", "file": "data/brachial-plexus.json" }
+    { "id": "brachial-plexus", "level": 2, "title": "腕神経叢", "file": "data/brachial-plexus.json" },
+    { "id": "lumbar-plexus", "level": 2, "title": "腰神経叢", "file": "data/lumbar-plexus.json" },
+    { "id": "sacral-plexus", "level": 2, "title": "仙骨神経叢", "file": "data/sacral-plexus.json" },
+    { "id": "cervical-plexus", "level": 2, "title": "頸神経叢", "file": "data/cervical-plexus.json" }
   ]
 }

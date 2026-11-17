@@ -1,0 +1,181 @@
+{
+  "id": "sacral-plexus",
+  "level": 2,
+  "title": "仙骨神経叢",
+  "description": "L4–S4 の前枝から出る主要な枝をつなぐ。坐骨神経は脛骨神経と総腓骨神経に分かれる（下書き・要確認）。",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "l4",
+      "label": "L4",
+      "x": 0.1,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "l5",
+      "label": "L5",
+      "x": 0.26,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "s1",
+      "label": "S1",
+      "x": 0.42,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "s2",
+      "label": "S2",
+      "x": 0.58,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "s3",
+      "label": "S3",
+      "x": 0.74,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "s4",
+      "label": "S4",
+      "x": 0.9,
+      "y": 0.08,
+      "group": "root"
+    },
+    {
+      "id": "sup-gluteal",
+      "label": "上殿神経",
+      "x": 0.1,
+      "y": 0.48,
+      "group": "branch"
+    },
+    {
+      "id": "inf-gluteal",
+      "label": "下殿神経",
+      "x": 0.28,
+      "y": 0.48,
+      "group": "branch"
+    },
+    {
+      "id": "sciatic",
+      "label": "坐骨神経",
+      "x": 0.5,
+      "y": 0.48,
+      "group": "trunk"
+    },
+    {
+      "id": "pfcn",
+      "label": "後大腿皮神経",
+      "x": 0.7,
+      "y": 0.48,
+      "group": "branch"
+    },
+    {
+      "id": "pudendal",
+      "label": "陰部神経",
+      "x": 0.9,
+      "y": 0.48,
+      "group": "branch"
+    },
+    {
+      "id": "tibial",
+      "label": "脛骨神経",
+      "x": 0.4,
+      "y": 0.85,
+      "group": "branch"
+    },
+    {
+      "id": "common-fibular",
+      "label": "総腓骨神経",
+      "x": 0.6,
+      "y": 0.85,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "l4",
+      "to": "sup-gluteal"
+    },
+    {
+      "from": "l5",
+      "to": "sup-gluteal"
+    },
+    {
+      "from": "s1",
+      "to": "sup-gluteal"
+    },
+    {
+      "from": "l5",
+      "to": "inf-gluteal"
+    },
+    {
+      "from": "s1",
+      "to": "inf-gluteal"
+    },
+    {
+      "from": "s2",
+      "to": "inf-gluteal"
+    },
+    {
+      "from": "l4",
+      "to": "sciatic"
+    },
+    {
+      "from": "l5",
+      "to": "sciatic"
+    },
+    {
+      "from": "s1",
+      "to": "sciatic"
+    },
+    {
+      "from": "s2",
+      "to": "sciatic"
+    },
+    {
+      "from": "s3",
+      "to": "sciatic"
+    },
+    {
+      "from": "sciatic",
+      "to": "tibial"
+    },
+    {
+      "from": "sciatic",
+      "to": "common-fibular"
+    },
+    {
+      "from": "s1",
+      "to": "pfcn"
+    },
+    {
+      "from": "s2",
+      "to": "pfcn"
+    },
+    {
+      "from": "s3",
+      "to": "pfcn"
+    },
+    {
+      "from": "s2",
+      "to": "pudendal"
+    },
+    {
+      "from": "s3",
+      "to": "pudendal"
+    },
+    {
+      "from": "s4",
+      "to": "pudendal"
+    }
+  ]
+}
