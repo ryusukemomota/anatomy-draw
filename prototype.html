@@ -28,6 +28,8 @@
       }
       header h1 { font-size: 15px; margin: 0; font-weight: 700; }
       header .title-sub { font-size: 12px; color: var(--label); }
+      header a.home { color: var(--label); font-size: 12px; margin-left: auto; }
+      header a.home + #problem-select { margin-left: 0; }
       header #problem-select {
         margin-left: auto; font: inherit; font-size: 13px;
         background: #2b4157; color: #cfe0ee;
@@ -77,6 +79,7 @@
     <header>
       <h1 id="title">読み込み中…</h1>
       <span class="title-sub" id="subtitle"></span>
+      <a class="home" href="index.html">ホーム</a>
       <select id="problem-select" aria-label="題材を選ぶ"></select>
     </header>
 
@@ -86,6 +89,7 @@
 
     <footer>
       <button id="btn-grade">採点</button>
+      <button id="btn-undo" class="secondary">1本戻す</button>
       <button id="btn-reset" class="secondary">やり直す</button>
       <button id="btn-guide" class="secondary" title="お手本の濃さを切り替え">ガイド: 濃い</button>
       <span class="msg" id="msg"></span>
@@ -322,6 +326,16 @@
         m.className = "msg" + (ok ? " ok" : "");
       }
 
+      // 直前に描いた1本を消す
+      function undo() {
+        if (!problem || drawing) return;
+        if (allDrawn.length === 0) { setMsg("消せる線がありません", false); return; }
+        allDrawn.pop();
+        document.getElementById("score").textContent = "";
+        setMsg("", false);
+        render(); // お手本の色（緑）もリセットされ、残りの軌跡を描き直す
+      }
+
       function reset() {
         allDrawn = []; drawnPoints = []; drawing = false;
         document.getElementById("score").textContent = "";
@@ -330,6 +344,7 @@
       }
 
       document.getElementById("btn-grade").addEventListener("click", grade);
+      document.getElementById("btn-undo").addEventListener("click", undo);
       document.getElementById("btn-reset").addEventListener("click", reset);
       document.getElementById("btn-guide").addEventListener("click", cycleGuideLevel);
 
