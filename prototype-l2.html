@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AnatoDraw — Level 2 ノード接続 プロトタイプ</title>
+    <style>
+      :root {
+        --bg: #0f1b26;
+        --panel: #16293a;
+        --ink: #ffffff;
+        --ok: #39d98a;
+        --accent: #f0a868;
+        --label: #93b2c8;
+        --bad: #e06a6a;
+      }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        margin: 0; height: 100%;
+        background: var(--bg); color: var(--ink);
+        font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+        overscroll-behavior: none;
+      }
+      body { display: flex; flex-direction: column; }
+      header {
+        padding: 10px 14px; background: var(--panel);
+        display: flex; align-items: center; gap: 10px;
+      }
+      header h1 { font-size: 15px; margin: 0; font-weight: 700; }
+      header .title-sub { font-size: 12px; color: var(--label); }
+      header a { color: var(--label); font-size: 12px; }
+      header #problem-select {
+        margin-left: auto; font: inherit; font-size: 13px;
+        background: #2b4157; color: #cfe0ee;
+        border: none; border-radius: 8px; padding: 6px 10px;
+      }
+      .stage {
+        flex: 1; position: relative;
+        display: flex; align-items: center; justify-content: center;
+        min-height: 0;
+      }
+      #svg {
+        width: min(100vw, calc(100vh - 170px));
+        height: min(100vw, calc(100vh - 170px));
+        touch-action: none;
+        background: #0b141d;
+        border-radius: 12px;
+        user-select: none; -webkit-user-select: none;
+      }
+      .edge { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; opacity: 0.9; }
+      .edge.ok { stroke: var(--ok); }
+      .edge.bad { stroke: var(--bad); }
+      .edge.missing { stroke: #8aa0b2; stroke-dasharray: 10 10; opacity: 0.8; }
+      .node { cursor: pointer; stroke: #0b141d; stroke-width: 3; }
+      .node.root { fill: #7aa7d9; }
+      .node.trunk { fill: #8fd0a8; }
+      .node.cord { fill: #e3c26f; }
+      .node.branch { fill: #d99a9a; }
+      .node.selected { stroke: var(--ink); stroke-width: 6; }
+      .node-label { fill: var(--label); font-size: 22px; text-anchor: middle; pointer-events: none; }
+      footer {
+        padding: 10px 14px; background: var(--panel);
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      }
+      button {
+        font: inherit; font-size: 14px; font-weight: 700;
+        border: none; border-radius: 8px; padding: 10px 16px;
+        background: var(--accent); color: #1a1008;
+      }
+      button.secondary { background: #2b4157; color: #cfe0ee; }
+      #score { font-size: 14px; color: var(--label); margin-left: auto; text-align: right; }
+      #score strong { font-size: 20px; }
+      .msg { font-size: 13px; }
+      .msg.ok { color: var(--ok); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 id="title">読み込み中…</h1>
+      <span class="title-sub" id="subtitle"></span>
+      <a href="prototype.html">Level 1へ</a>
+      <select id="problem-select" aria-label="題材を選ぶ"></select>
+    </header>
+
+    <div class="stage">
+      <svg id="svg" viewBox="0 0 1000 1000" aria-label="ノード接続キャンバス"></svg>
+    </div>
+
+    <footer>
+      <button id="btn-grade">採点</button>
+      <button id="btn-undo" class="secondary">1つ戻す</button>
+      <button id="btn-reset" class="secondary">やり直す</button>
+      <span class="msg" id="msg"></span>
+      <span id="score"></span>
+    </footer>
+
+    <script>
+      // ============ 設定 ============
+      const MANIFEST_URL = "data/manifest.json";
+      const VB = 1000;
+      const NS = "http://www.w3.org/2000/svg";
+      const FP_PENALTY = 0.25; // 余分なエッジ1本あたりの減点（甘め）
+      const PASS = 0.7;        // 「よくできました」のしきい値
+
+      const svg = document.getElementById("svg");
+
+      let problem = null;
+      let nodeById = {};
+      let userEdges = [];  // [[idA, idB], ...] 学習者が引いたエッジ
+      let selected = null; // 選択中のノードid
+      let graded = null;   // 採点結果 {ok:Set, bad:Set, missing:Set}
+
+      const key = (a, b) => [a, b].sort().join("|");
+      const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
+
+      // ---- 題材一覧（Level 2 のみ） ----
+      async function loadManifest() {
+        const sel = document.getElementById("problem-select");
+        try {
+          const res = await fetch(MANIFEST_URL);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const manifest = await res.json();
+          const list = (manifest.problems || []).filter((p) => p.level === 2);
+          if (list.length === 0) throw new Error("Level 2 の題材がありません");
+          sel.innerHTML = "";
+          list.forEach((p) => {
+            const opt = document.createElement("option");
+            opt.value = p.file;
+            opt.textContent = p.title || p.id;
+            sel.appendChild(opt);
+          });
+          sel.addEventListener("change", () => loadProblem(sel.value));
+          await loadProblem(list[0].file);
+        } catch (e) {
+          document.getElementById("title").textContent = "題材一覧の読み込み失敗";
+          setMsg("ローカルサーバーで開いてください（例: python3 -m http.server）。詳細: " + e.message, false);
+        }
+      }
+
+      async function loadProblem(url) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          problem = await res.json();
+        } catch (e) {
+          document.getElementById("title").textContent = "JSON読み込み失敗";
+          setMsg("題材データを読めませんでした。詳細: " + e.message, false);
+          return;
+        }
+        nodeById = {};
+        problem.nodes.forEach((n) => { nodeById[n.id] = n; });
+        document.getElementById("title").textContent = problem.title || "ノード接続";
+        document.getElementById("subtitle").textContent =
+          problem.nodes.length + " 個のノードをつなぐ";
+        reset();
+      }
+
+      // ---- 描画 ----
+      function line(a, b, cls) {
+        const p = toSvg(nodeById[a]), q = toSvg(nodeById[b]);
+        const el = document.createElementNS(NS, "line");
+        el.setAttribute("x1", p.x); el.setAttribute("y1", p.y);
+        el.setAttribute("x2", q.x); el.setAttribute("y2", q.y);
+        el.setAttribute("class", "edge " + cls);
+        svg.appendChild(el);
+      }
+
+      function render() {
+        svg.innerHTML = "";
+
+        // 不足していたエッジ（採点後のみ、答えとして点線で表示）
+        if (graded) {
+          problem.edges.forEach((e) => {
+            if (graded.missing.has(key(e.from, e.to))) line(e.from, e.to, "missing");
+          });
+        }
+        // 学習者のエッジ
+        userEdges.forEach(([a, b]) => {
+          let cls = "";
+          if (graded) cls = graded.ok.has(key(a, b)) ? "ok" : "bad";
+          line(a, b, cls);
+        });
+
+        // ノード
+        problem.nodes.forEach((n) => {
+          const p = toSvg(n);
+          const c = document.createElementNS(NS, "circle");
+          c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("r", 30);
+          c.setAttribute("class", "node " + (n.group || "") + (n.id === selected ? " selected" : ""));
+          c.addEventListener("pointerdown", (ev) => { ev.preventDefault(); onNode(n.id); });
+          svg.appendChild(c);
+
+          const t = document.createElementNS(NS, "text");
+          t.setAttribute("x", p.x); t.setAttribute("y", p.y + 56);
+          t.setAttribute("class", "node-label");
+          t.textContent = n.label;
+          svg.appendChild(t);
+        });
+      }
+
+      // ---- 操作: 1つ目のノード → 2つ目のノードでエッジを引く／消す ----
+      function onNode(id) {
+        graded = null;
+        clearResult();
+        if (selected === null) {
+          selected = id;
+        } else if (selected === id) {
+          selected = null;
+        } else {
+          toggleEdge(selected, id);
+          selected = null;
+        }
+        render();
+      }
+
+      function toggleEdge(a, b) {
+        const k = key(a, b);
+        const i = userEdges.findIndex(([x, y]) => key(x, y) === k);
+        if (i >= 0) userEdges.splice(i, 1);
+        else userEdges.push([a, b]);
+      }
+
+      // ============ 採点（甘め: 正解エッジの一致度） ============
+      function grade() {
+        if (!problem) return;
+        if (userEdges.length === 0) {
+          setMsg("まずノードを2つ順にタップしてつないでください", false);
+          return;
+        }
+        const correct = new Set(problem.edges.map((e) => key(e.from, e.to)));
+        const user = new Set(userEdges.map(([a, b]) => key(a, b)));
+        const ok = new Set([...user].filter((k) => correct.has(k)));
+        const bad = new Set([...user].filter((k) => !correct.has(k)));
+        const missing = new Set([...correct].filter((k) => !user.has(k)));
+        graded = { ok, bad, missing };
+
+        const n = correct.size;
+        const raw = (ok.size - FP_PENALTY * bad.size) / n;
+        const score = Math.round(Math.max(0, Math.min(1, raw)) * 100);
+        document.getElementById("score").innerHTML =
+          `スコア <strong>${score}</strong>%<br>正解 ${ok.size}/${n}・余分 ${bad.size}・不足 ${missing.size}`;
+        if (raw >= PASS) setMsg("よくつなげました！", true);
+        else if (raw >= 0.4) setMsg("おしい！緑＝正解、赤＝余分、点線＝不足", false);
+        else setMsg("つながりを思い出してみよう（点線が正解）", false);
+        render();
+      }
+
+      function setMsg(text, ok) {
+        const m = document.getElementById("msg");
+        m.textContent = text;
+        m.className = "msg" + (ok ? " ok" : "");
+      }
+      function clearResult() {
+        document.getElementById("score").textContent = "";
+        setMsg("", false);
+      }
+
+      function undo() {
+        graded = null; clearResult();
+        userEdges.pop(); selected = null;
+        render();
+      }
+      function reset() {
+        userEdges = []; selected = null; graded = null;
+        clearResult();
+        render();
+      }
+
+      document.getElementById("btn-grade").addEventListener("click", grade);
+      document.getElementById("btn-undo").addEventListener("click", undo);
+      document.getElementById("btn-reset").addEventListener("click", reset);
+
+      loadManifest();
+    </script>
+  </body>
+</html>

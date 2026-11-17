@@ -1,0 +1,49 @@
+{
+  "id": "brachial-plexus",
+  "level": 2,
+  "title": "腕神経叢",
+  "description": "根（C5–T1）→ 幹 → 束 → 終枝 の正しいつながりを作る。エッジの向きは区別しない。",
+  "viewBox": { "w": 1, "h": 1 },
+  "nodes": [
+    { "id": "c5", "label": "C5", "x": 0.15, "y": 0.08, "group": "root" },
+    { "id": "c6", "label": "C6", "x": 0.32, "y": 0.08, "group": "root" },
+    { "id": "c7", "label": "C7", "x": 0.50, "y": 0.08, "group": "root" },
+    { "id": "c8", "label": "C8", "x": 0.68, "y": 0.08, "group": "root" },
+    { "id": "t1", "label": "T1", "x": 0.85, "y": 0.08, "group": "root" },
+
+    { "id": "upper", "label": "上神経幹", "x": 0.24, "y": 0.30, "group": "trunk" },
+    { "id": "middle", "label": "中神経幹", "x": 0.50, "y": 0.30, "group": "trunk" },
+    { "id": "lower", "label": "下神経幹", "x": 0.76, "y": 0.30, "group": "trunk" },
+
+    { "id": "lateral", "label": "外側神経束", "x": 0.20, "y": 0.55, "group": "cord" },
+    { "id": "posterior", "label": "後神経束", "x": 0.50, "y": 0.55, "group": "cord" },
+    { "id": "medial", "label": "内側神経束", "x": 0.80, "y": 0.55, "group": "cord" },
+
+    { "id": "musculocutaneous", "label": "筋皮神経", "x": 0.10, "y": 0.82, "group": "branch" },
+    { "id": "axillary", "label": "腋窩神経", "x": 0.30, "y": 0.82, "group": "branch" },
+    { "id": "median", "label": "正中神経", "x": 0.50, "y": 0.82, "group": "branch" },
+    { "id": "radial", "label": "橈骨神経", "x": 0.70, "y": 0.82, "group": "branch" },
+    { "id": "ulnar", "label": "尺骨神経", "x": 0.90, "y": 0.82, "group": "branch" }
+  ],
+  "edges": [
+    { "from": "c5", "to": "upper" },
+    { "from": "c6", "to": "upper" },
+    { "from": "c7", "to": "middle" },
+    { "from": "c8", "to": "lower" },
+    { "from": "t1", "to": "lower" },
+
+    { "from": "upper", "to": "lateral" },
+    { "from": "middle", "to": "lateral" },
+    { "from": "upper", "to": "posterior" },
+    { "from": "middle", "to": "posterior" },
+    { "from": "lower", "to": "posterior" },
+    { "from": "lower", "to": "medial" },
+
+    { "from": "lateral", "to": "musculocutaneous" },
+    { "from": "lateral", "to": "median" },
+    { "from": "medial", "to": "median" },
+    { "from": "medial", "to": "ulnar" },
+    { "from": "posterior", "to": "axillary" },
+    { "from": "posterior", "to": "radial" }
+  ]
+}

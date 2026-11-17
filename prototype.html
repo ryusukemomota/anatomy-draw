@@ -131,7 +131,7 @@
           const res = await fetch(MANIFEST_URL);
           if (!res.ok) throw new Error("HTTP " + res.status);
           const manifest = await res.json();
-          const list = manifest.problems || [];
+          const list = (manifest.problems || []).filter((p) => (p.level || 1) === 1);
           if (list.length === 0) throw new Error("題材が空です");
           sel.innerHTML = "";
           list.forEach((p) => {
