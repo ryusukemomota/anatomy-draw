@@ -5,6 +5,7 @@
     { "id": "aorta-iliac", "title": "大動脈から総腸骨動脈", "file": "data/aorta-iliac.json" },
     { "id": "iliac-artery", "title": "総腸骨動脈", "file": "data/iliac-artery.json" },
     { "id": "celiac-trunk", "title": "腹腔動脈", "file": "data/celiac-trunk.json" },
-    { "id": "external-carotid", "title": "外頸動脈", "file": "data/external-carotid.json" }
+    { "id": "external-carotid", "title": "外頸動脈", "file": "data/external-carotid.json" },
+    { "id": "right-subclavian", "title": "右鎖骨下動脈", "file": "data/right-subclavian.json" }
   ]
 }
