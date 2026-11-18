@@ -123,7 +123,7 @@
         </div>
         <p class="hint">
           「なぞる」: 画面を指/マウスでなぞると1本の線（stroke）として追加されます。<br />
-          「ラベル配置」: 画面をタップするとラベルを置けます（テキストを尋ねます）。<br />
+          「ラベル配置」: 空いている所をタップでラベル追加、既存ラベルをドラッグで移動。座標は「ラベルの一覧」でも数値で直せます。<br />
           「ノード配置・移動」: 空いている所をタップでノード追加、ノードをドラッグで移動。<br />
           「エッジ接続」: ノードを2つ順にタップでつなぐ（同じ2つをもう一度で解除）。<br />
           ノードがあると Level 2 の JSON（nodes / edges）で出力されます。
@@ -139,6 +139,18 @@
           <label class="fld" style="width:120px">点の間引き距離<input type="number" id="meta-simplify" value="0.012" step="0.002" min="0" max="0.1" /></label>
           <span class="hint" style="flex:1">指でなぞると点が多すぎるので、この距離（正規化）より近い点は間引きます。</span>
         </div>
+
+        <h2>全体の拡大・縮小</h2>
+        <div class="row">
+          <label class="fld" style="width:90px">倍率<input type="number" id="scale-factor" value="1.5" step="0.1" min="0.2" max="5" /></label>
+          <button id="btn-scale" class="secondary">倍率を適用</button>
+          <button id="btn-fit" class="secondary">枠に合わせる</button>
+          <button id="btn-scale-undo" class="secondary">直前を取り消す</button>
+        </div>
+        <p class="hint">
+          線・ラベル・ノードをまとめて拡大縮小します。「倍率を適用」は今の中心を保ち、
+          「枠に合わせる」は余白5%で画面いっぱいに広げて中央に置きます。
+        </p>
 
         <h2>線の一覧 <span class="count" id="stroke-count"></span></h2>
         <ul id="stroke-list"></ul>
@@ -163,6 +175,7 @@
 
         <h2>出力</h2>
         <div class="row">
+          <button id="btn-preview">プレビュー</button>
           <button id="btn-build">JSONを生成</button>
           <button id="btn-copy" class="secondary">コピー</button>
           <button id="btn-download" class="secondary">ダウンロード</button>
@@ -186,6 +199,20 @@
       let edges = [];     // Level 2: [{from,to}]
       let pendingNode = null; // エッジ接続中の1つ目のノードid
       let dragNode = null;    // ドラッグ中のノード
+      let dragLabel = null;   // ドラッグ中のラベル
+
+      // ラベルの当たり判定: 点の周り、または右側の文字の範囲
+      function labelAt(p) {
+        let best = null, bd = Infinity;
+        labels.forEach((l) => {
+          const w = 0.016 * (l.text || "").length + 0.02;
+          const inText = p.x >= l.x - 0.02 && p.x <= l.x + w && Math.abs(p.y - l.y) <= 0.025;
+          if (!inText) return;
+          const d = Math.hypot(p.x - l.x, p.y - l.y);
+          if (d < bd) { bd = d; best = l; }
+        });
+        return best;
+      }
 
       let drawing = false;
       let current = [];   // 今なぞっている点列（正規化）
@@ -304,6 +331,9 @@
         if (graphPointerDown(ev)) return;
         if (mode === "label") {
           const p = eventToNorm(ev);
+          // 既存ラベル（点または文字の上）をつかんだら移動、空所なら新規追加
+          const hit = labelAt(p);
+          if (hit) { dragLabel = hit; svg.setPointerCapture(ev.pointerId); return; }
           const text = prompt("ラベルのテキスト", "");
           if (text) { labels.push({ text, x: round3(p.x), y: round3(p.y) }); refreshLabels(); render(); }
           return;
@@ -314,6 +344,12 @@
         liveStroke();
       });
       svg.addEventListener("pointermove", (ev) => {
+        if (dragLabel) {
+          const p = eventToNorm(ev);
+          dragLabel.x = round3(p.x); dragLabel.y = round3(p.y);
+          render();
+          return;
+        }
         if (dragNode) {
           const p = eventToNorm(ev);
           dragNode.x = round3(p.x); dragNode.y = round3(p.y);
@@ -383,16 +419,26 @@
           const text = document.createElement("input");
           text.type = "text"; text.value = l.text; text.title = "ラベルのテキスト";
           text.addEventListener("input", () => { l.text = text.value; render(); });
-          const pos = document.createElement("span");
-          pos.className = "count";
-          pos.textContent = `(${l.x}, ${l.y})`;
+          const coordInput = (axis) => {
+            const inp = document.createElement("input");
+            inp.type = "number"; inp.step = "0.005"; inp.min = "0"; inp.max = "1";
+            inp.value = l[axis]; inp.title = axis + "座標（0〜1）";
+            inp.style.cssText = "flex:none;width:68px";
+            inp.addEventListener("input", () => {
+              const v = parseFloat(inp.value);
+              if (isNaN(v)) return;
+              l[axis] = round3(clamp01(v));
+              render();
+            });
+            return inp;
+          };
           const del = document.createElement("button");
           del.className = "danger"; del.textContent = "削除";
           del.addEventListener("click", () => {
             labels.splice(idx, 1);
             refreshLabels(); render();
           });
-          li.append(text, pos, del);
+          li.append(text, coordInput("x"), coordInput("y"), del);
           ul.appendChild(li);
         });
         document.getElementById("label-count").textContent =
@@ -461,6 +507,7 @@
         return true;
       }
       function endDragNode() {
+        if (dragLabel) { dragLabel = null; refreshLabels(); return; }
         if (!dragNode) return;
         dragNode = null;
         refreshGraph();
@@ -515,6 +562,86 @@
         });
         document.getElementById("edge-count").textContent = edges.length ? `(${edges.length}本)` : "";
       }
+
+      // ============ プレビュー（本物の画面を新しいタブで開く） ============
+      document.getElementById("btn-preview").addEventListener("click", () => {
+        const isGraph = nodes.length > 0;
+        if (!isGraph && strokes.length === 0) {
+          alert("プレビューする線かノードがありません");
+          return;
+        }
+        if (isGraph && edges.length === 0) {
+          alert("エッジがありません。ノードをつないでからプレビューしてください");
+          return;
+        }
+        const problem = build(); // 出力欄にも反映される
+        try {
+          localStorage.setItem("anatodraw-preview", JSON.stringify(problem));
+        } catch (e) {
+          alert("プレビュー用データを保存できませんでした: " + e.message);
+          return;
+        }
+        window.open((isGraph ? "prototype-l2.html" : "prototype.html") + "?preview=1", "_blank");
+      });
+
+      // ============ 全体の拡大・縮小 ============
+      let scaleBackup = null; // 直前の状態（1段階だけ取り消せる）
+
+      function allPoints() {
+        const pts = [];
+        strokes.forEach((s) => s.points.forEach((p) => pts.push(p)));
+        labels.forEach((l) => pts.push(l));
+        nodes.forEach((n) => pts.push(n));
+        return pts;
+      }
+      function bounds(pts) {
+        const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+        return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+      }
+      // 全点を (p - from) * k + to に変換。範囲外になるなら適用しない
+      function transformAll(k, fromC, toC) {
+        const pts = allPoints();
+        const mapped = pts.map((p) => ({
+          x: (p.x - fromC.x) * k + toC.x,
+          y: (p.y - fromC.y) * k + toC.y,
+        }));
+        if (mapped.some((p) => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)) {
+          alert("画面（0〜1）からはみ出すため適用できません。倍率を下げるか、「枠に合わせる」を使ってください。");
+          return;
+        }
+        scaleBackup = {
+          strokes: strokes.map((s) => ({ ...s, points: s.points.map((p) => ({ ...p })) })),
+          labels: labels.map((l) => ({ ...l })),
+          nodes: nodes.map((n) => ({ ...n })),
+        };
+        pts.forEach((p, i) => { p.x = round3(mapped[i].x); p.y = round3(mapped[i].y); });
+        refreshList(); refreshLabels(); render();
+      }
+      function centerOf(b) { return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 }; }
+
+      document.getElementById("btn-scale").addEventListener("click", () => {
+        const pts = allPoints();
+        if (pts.length === 0) { alert("拡大する線・ラベル・ノードがありません"); return; }
+        const k = parseFloat(document.getElementById("scale-factor").value);
+        if (!(k > 0)) { alert("倍率を入力してください"); return; }
+        const c = centerOf(bounds(pts));
+        transformAll(k, c, c);
+      });
+      document.getElementById("btn-fit").addEventListener("click", () => {
+        const pts = allPoints();
+        if (pts.length === 0) { alert("拡大する線・ラベル・ノードがありません"); return; }
+        const b = bounds(pts);
+        const w = b.maxX - b.minX, h = b.maxY - b.minY;
+        const MARGIN = 0.05;
+        const k = Math.min((1 - 2 * MARGIN) / (w || 1e-6), (1 - 2 * MARGIN) / (h || 1e-6));
+        transformAll(k, centerOf(b), { x: 0.5, y: 0.5 });
+      });
+      document.getElementById("btn-scale-undo").addEventListener("click", () => {
+        if (!scaleBackup) { alert("取り消せる拡大・縮小がありません"); return; }
+        strokes = scaleBackup.strokes; labels = scaleBackup.labels; nodes = scaleBackup.nodes;
+        scaleBackup = null;
+        refreshList(); refreshLabels(); render();
+      });
 
       function buildGraph() {
         const problem = {

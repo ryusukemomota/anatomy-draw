@@ -127,7 +127,28 @@
       const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
 
       // ---- 題材一覧（Level 2 のみ） ----
+      // ---- プレビュー: トレースツールが localStorage に入れた未保存データを表示 ----
+      function loadPreview() {
+        document.getElementById("problem-select").style.display = "none";
+        try {
+          const raw = localStorage.getItem("anatodraw-preview");
+          if (!raw) throw new Error("プレビュー用データがありません。トレースツールの「プレビュー」から開いてください");
+          problem = JSON.parse(raw);
+        } catch (e) {
+          document.getElementById("title").textContent = "プレビューを読み込めません";
+          setMsg(e.message, false);
+          return;
+        }
+        nodeById = {};
+        problem.nodes.forEach((n) => { nodeById[n.id] = n; });
+        document.getElementById("title").textContent = (problem.title || "ノード接続") + "（プレビュー）";
+        document.getElementById("subtitle").textContent =
+          problem.nodes.length + " 個のノード・未保存のデータ";
+        reset();
+      }
+
       async function loadManifest() {
+        if (new URLSearchParams(location.search).has("preview")) { loadPreview(); return; }
         const sel = document.getElementById("problem-select");
         try {
           const res = await fetch(MANIFEST_URL);

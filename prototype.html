@@ -51,7 +51,7 @@
       .guide-path { fill: none; stroke: var(--guide); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
       .guide-path.done { stroke: var(--ok); opacity: 0.9; }
       .ink-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
-      .label { fill: var(--label); font-size: 13px; opacity: 0.7; }
+      .label { fill: var(--label); font-size: 22px; opacity: 0.85; }
 
       /* ガイドの濃さ3段階（線の濃さを調整。ラベルは位置の手がかりとして常に残す） */
       #svg.guide-faint .guide-path { opacity: 0.22; }
@@ -129,7 +129,27 @@
       const toSvg = (p) => ({ x: p.x * VB, y: p.y * VB });
 
       // ---- 題材一覧（マニフェスト）を読んでセレクタを作る ----
+      // ---- プレビュー: トレースツールが localStorage に入れた未保存データを表示 ----
+      function loadPreview() {
+        document.getElementById("problem-select").style.display = "none";
+        try {
+          const raw = localStorage.getItem("anatodraw-preview");
+          if (!raw) throw new Error("プレビュー用データがありません。トレースツールの「プレビュー」から開いてください");
+          problem = JSON.parse(raw);
+        } catch (e) {
+          document.getElementById("title").textContent = "プレビューを読み込めません";
+          document.getElementById("msg").textContent = e.message;
+          return;
+        }
+        reset();
+        document.getElementById("title").textContent = (problem.title || "なぞり描き") + "（プレビュー）";
+        document.getElementById("subtitle").textContent =
+          (problem.strokes?.length || 0) + " 本の線・未保存のデータ";
+        render();
+      }
+
       async function loadManifest() {
+        if (new URLSearchParams(location.search).has("preview")) { loadPreview(); return; }
         const sel = document.getElementById("problem-select");
         try {
           const res = await fetch(MANIFEST_URL);
