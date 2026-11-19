@@ -1,0 +1,129 @@
+{
+  "id": "rotator-cuff",
+  "level": 2,
+  "title": "回旋筋腱板（起始と停止）",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "o-supraspinous",
+      "label": "棘上窩",
+      "x": 0.093,
+      "y": 0.325,
+      "group": "root"
+    },
+    {
+      "id": "o-subscapular",
+      "label": "肩甲下窩",
+      "x": 0.936,
+      "y": 0.429,
+      "group": "root"
+    },
+    {
+      "id": "o-lateral-border",
+      "label": "肩甲骨外側縁",
+      "x": 0.093,
+      "y": 0.694,
+      "group": "root"
+    },
+    {
+      "id": "o-infraspinous",
+      "label": "棘下窩",
+      "x": 0.092,
+      "y": 0.543,
+      "group": "root"
+    },
+    {
+      "id": "m-infraspinatus",
+      "label": "棘下筋",
+      "x": 0.274,
+      "y": 0.469,
+      "group": "cord"
+    },
+    {
+      "id": "m-supraspinatus",
+      "label": "棘上筋",
+      "x": 0.336,
+      "y": 0.324,
+      "group": "cord"
+    },
+    {
+      "id": "m-subscapularis",
+      "label": "肩甲下筋",
+      "x": 0.793,
+      "y": 0.435,
+      "group": "cord"
+    },
+    {
+      "id": "m-teres-minor",
+      "label": "小円筋",
+      "x": 0.285,
+      "y": 0.595,
+      "group": "cord"
+    },
+    {
+      "id": "i-lesser",
+      "label": "小結節",
+      "x": 0.658,
+      "y": 0.438,
+      "group": "branch"
+    },
+    {
+      "id": "i-greater-mid",
+      "label": "大結節（中部）",
+      "x": 0.484,
+      "y": 0.396,
+      "group": "branch"
+    },
+    {
+      "id": "i-greater-sup",
+      "label": "大結節（上部）",
+      "x": 0.575,
+      "y": 0.332,
+      "group": "branch"
+    },
+    {
+      "id": "i-greater-inf",
+      "label": "大結節（下部）",
+      "x": 0.487,
+      "y": 0.495,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "o-supraspinous",
+      "to": "m-supraspinatus"
+    },
+    {
+      "from": "m-supraspinatus",
+      "to": "i-greater-sup"
+    },
+    {
+      "from": "o-infraspinous",
+      "to": "m-infraspinatus"
+    },
+    {
+      "from": "m-infraspinatus",
+      "to": "i-greater-mid"
+    },
+    {
+      "from": "o-lateral-border",
+      "to": "m-teres-minor"
+    },
+    {
+      "from": "m-teres-minor",
+      "to": "i-greater-inf"
+    },
+    {
+      "from": "o-subscapular",
+      "to": "m-subscapularis"
+    },
+    {
+      "from": "m-subscapularis",
+      "to": "i-lesser"
+    }
+  ]
+}
