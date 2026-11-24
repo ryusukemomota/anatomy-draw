@@ -1,0 +1,189 @@
+{
+  "id": "arm-muscles",
+  "level": 2,
+  "title": "上腕の筋（起始と停止）",
+  "description": "肩甲骨・上腕骨の起始（上段）→ 筋・頭（中段）→ 停止（下段）をつなぐ。下書き・要確認。",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "o-supraglenoid",
+      "label": "関節上結節",
+      "x": 0.08,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "o-infraglenoid",
+      "label": "関節下結節",
+      "x": 0.248,
+      "y": 0.16,
+      "group": "root"
+    },
+    {
+      "id": "o-humerus-post-lat",
+      "label": "上腕骨後面(外上)",
+      "x": 0.416,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "o-coracoid",
+      "label": "烏口突起",
+      "x": 0.584,
+      "y": 0.16,
+      "group": "root"
+    },
+    {
+      "id": "o-humerus-ant",
+      "label": "上腕骨前面(遠位)",
+      "x": 0.752,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "o-humerus-post-med",
+      "label": "上腕骨後面(内下)",
+      "x": 0.92,
+      "y": 0.16,
+      "group": "root"
+    },
+    {
+      "id": "m-brachialis",
+      "label": "上腕筋",
+      "x": 0.08,
+      "y": 0.43,
+      "group": "cord"
+    },
+    {
+      "id": "m-triceps-long",
+      "label": "三頭筋 長頭",
+      "x": 0.22,
+      "y": 0.52,
+      "group": "cord"
+    },
+    {
+      "id": "m-biceps-short",
+      "label": "二頭筋 短頭",
+      "x": 0.36,
+      "y": 0.43,
+      "group": "cord"
+    },
+    {
+      "id": "m-coracobrachialis",
+      "label": "烏口腕筋",
+      "x": 0.5,
+      "y": 0.52,
+      "group": "cord"
+    },
+    {
+      "id": "m-triceps-medial",
+      "label": "三頭筋 内側頭",
+      "x": 0.64,
+      "y": 0.43,
+      "group": "cord"
+    },
+    {
+      "id": "m-biceps-long",
+      "label": "二頭筋 長頭",
+      "x": 0.78,
+      "y": 0.52,
+      "group": "cord"
+    },
+    {
+      "id": "m-triceps-lateral",
+      "label": "三頭筋 外側頭",
+      "x": 0.92,
+      "y": 0.43,
+      "group": "cord"
+    },
+    {
+      "id": "i-olecranon",
+      "label": "肘頭",
+      "x": 0.08,
+      "y": 0.9,
+      "group": "branch"
+    },
+    {
+      "id": "i-radial-tuberosity",
+      "label": "橈骨粗面",
+      "x": 0.36,
+      "y": 0.9,
+      "group": "branch"
+    },
+    {
+      "id": "i-ulnar-tuberosity",
+      "label": "尺骨粗面",
+      "x": 0.64,
+      "y": 0.9,
+      "group": "branch"
+    },
+    {
+      "id": "i-humerus-medial",
+      "label": "上腕骨内側面(中央)",
+      "x": 0.92,
+      "y": 0.9,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "o-supraglenoid",
+      "to": "m-biceps-long"
+    },
+    {
+      "from": "o-coracoid",
+      "to": "m-biceps-short"
+    },
+    {
+      "from": "o-coracoid",
+      "to": "m-coracobrachialis"
+    },
+    {
+      "from": "o-humerus-ant",
+      "to": "m-brachialis"
+    },
+    {
+      "from": "o-infraglenoid",
+      "to": "m-triceps-long"
+    },
+    {
+      "from": "o-humerus-post-lat",
+      "to": "m-triceps-lateral"
+    },
+    {
+      "from": "o-humerus-post-med",
+      "to": "m-triceps-medial"
+    },
+    {
+      "from": "m-biceps-long",
+      "to": "i-radial-tuberosity"
+    },
+    {
+      "from": "m-biceps-short",
+      "to": "i-radial-tuberosity"
+    },
+    {
+      "from": "m-coracobrachialis",
+      "to": "i-humerus-medial"
+    },
+    {
+      "from": "m-brachialis",
+      "to": "i-ulnar-tuberosity"
+    },
+    {
+      "from": "m-triceps-long",
+      "to": "i-olecranon"
+    },
+    {
+      "from": "m-triceps-lateral",
+      "to": "i-olecranon"
+    },
+    {
+      "from": "m-triceps-medial",
+      "to": "i-olecranon"
+    }
+  ]
+}

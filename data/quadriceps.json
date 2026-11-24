@@ -1,0 +1,134 @@
+{
+  "id": "quadriceps",
+  "level": 2,
+  "title": "大腿四頭筋（起始と停止）",
+  "description": "骨盤・大腿骨の起始（上段）→ 筋（中段）→ 膝蓋骨の停止（下段）をつなぐ。四頭筋は膝蓋靱帯を介して脛骨粗面に付く（今回は膝蓋骨まで）。下書き・要確認。",
+  "viewBox": {
+    "w": 1,
+    "h": 1
+  },
+  "nodes": [
+    {
+      "id": "o-acetabulum",
+      "label": "寛骨臼上縁",
+      "x": 0.08,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "o-femur-ant",
+      "label": "大腿骨体の前面",
+      "x": 0.29,
+      "y": 0.16,
+      "group": "root"
+    },
+    {
+      "id": "o-aiis",
+      "label": "下前腸骨棘",
+      "x": 0.5,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "o-medial-lip",
+      "label": "転子間線・粗線内側唇",
+      "x": 0.71,
+      "y": 0.16,
+      "group": "root"
+    },
+    {
+      "id": "o-lateral-lip",
+      "label": "大転子・粗線外側唇",
+      "x": 0.92,
+      "y": 0.07,
+      "group": "root"
+    },
+    {
+      "id": "m-vastus-medialis",
+      "label": "内側広筋",
+      "x": 0.08,
+      "y": 0.5,
+      "group": "cord"
+    },
+    {
+      "id": "m-rectus-femoris",
+      "label": "大腿直筋",
+      "x": 0.36,
+      "y": 0.5,
+      "group": "cord"
+    },
+    {
+      "id": "m-vastus-intermedius",
+      "label": "中間広筋",
+      "x": 0.64,
+      "y": 0.5,
+      "group": "cord"
+    },
+    {
+      "id": "m-vastus-lateralis",
+      "label": "外側広筋",
+      "x": 0.92,
+      "y": 0.5,
+      "group": "cord"
+    },
+    {
+      "id": "i-patella-lateral",
+      "label": "膝蓋骨外側縁",
+      "x": 0.08,
+      "y": 0.9,
+      "group": "branch"
+    },
+    {
+      "id": "i-patella-medial",
+      "label": "膝蓋骨内側縁",
+      "x": 0.5,
+      "y": 0.9,
+      "group": "branch"
+    },
+    {
+      "id": "i-patella-base",
+      "label": "膝蓋骨底",
+      "x": 0.92,
+      "y": 0.9,
+      "group": "branch"
+    }
+  ],
+  "edges": [
+    {
+      "from": "o-aiis",
+      "to": "m-rectus-femoris"
+    },
+    {
+      "from": "o-acetabulum",
+      "to": "m-rectus-femoris"
+    },
+    {
+      "from": "o-lateral-lip",
+      "to": "m-vastus-lateralis"
+    },
+    {
+      "from": "o-medial-lip",
+      "to": "m-vastus-medialis"
+    },
+    {
+      "from": "o-femur-ant",
+      "to": "m-vastus-intermedius"
+    },
+    {
+      "from": "m-rectus-femoris",
+      "to": "i-patella-base"
+    },
+    {
+      "from": "m-vastus-intermedius",
+      "to": "i-patella-base"
+    },
+    {
+      "from": "m-vastus-lateralis",
+      "to": "i-patella-lateral"
+    },
+    {
+      "from": "m-vastus-medialis",
+      "to": "i-patella-medial"
+    }
+  ]
+}

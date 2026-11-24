@@ -11,6 +11,8 @@
     { "id": "lumbar-plexus", "level": 2, "title": "腰神経叢", "file": "data/lumbar-plexus.json" },
     { "id": "sacral-plexus", "level": 2, "title": "仙骨神経叢", "file": "data/sacral-plexus.json" },
     { "id": "cervical-plexus", "level": 2, "title": "頸神経叢", "file": "data/cervical-plexus.json" },
-    { "id": "rotator-cuff", "level": 2, "title": "回旋筋腱板（起始と停止）", "file": "data/rotator-cuff.json" }
+    { "id": "rotator-cuff", "level": 2, "title": "回旋筋腱板（起始と停止）", "file": "data/rotator-cuff.json" },
+    { "id": "arm-muscles", "level": 2, "title": "上腕の筋（起始と停止）", "file": "data/arm-muscles.json" },
+    { "id": "quadriceps", "level": 2, "title": "大腿四頭筋（起始と停止）", "file": "data/quadriceps.json" }
   ]
 }
