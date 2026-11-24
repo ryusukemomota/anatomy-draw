@@ -48,6 +48,7 @@
         background: #0b141d;
         border-radius: 12px;
       }
+      .base-image { opacity: 0.45; pointer-events: none; }
       .guide-path { fill: none; stroke: var(--guide); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
       .guide-path.done { stroke: var(--ok); opacity: 0.9; }
       .ink-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
@@ -197,6 +198,17 @@
         svg.innerHTML = "";
         svg.classList.remove("graded"); // 再描画で採点結果表示を解除
         applyGuideLevel();
+
+        // 背景の模式図（任意）。ノード・線の後ろに薄く敷く
+        if (problem.baseImageUrl) {
+          const img = document.createElementNS(NS, "image");
+          img.setAttribute("href", problem.baseImageUrl);
+          img.setAttribute("x", 0); img.setAttribute("y", 0);
+          img.setAttribute("width", VB); img.setAttribute("height", VB);
+          img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          img.setAttribute("class", "base-image");
+          svg.appendChild(img);
+        }
 
         // ラベル（薄く）
         (problem.guide?.labels || []).forEach((l) => {
