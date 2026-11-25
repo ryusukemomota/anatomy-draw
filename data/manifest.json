@@ -1,18 +1,18 @@
 {
   "problems": [
-    { "id": "aortic-arch", "title": "大動脈弓の分枝", "file": "data/aortic-arch.json" },
-    { "id": "abdominal-aorta", "title": "腹大動脈の主要分枝", "file": "data/abdominal-aorta.json" },
-    { "id": "aorta-iliac", "title": "大動脈から総腸骨動脈", "file": "data/aorta-iliac.json" },
-    { "id": "iliac-artery", "title": "総腸骨動脈", "file": "data/iliac-artery.json" },
-    { "id": "celiac-trunk", "title": "腹腔動脈", "file": "data/celiac-trunk.json" },
-    { "id": "external-carotid", "title": "外頸動脈", "file": "data/external-carotid.json" },
-    { "id": "right-subclavian", "title": "右鎖骨下動脈", "file": "data/right-subclavian.json" },
-    { "id": "brachial-plexus", "level": 2, "title": "腕神経叢", "file": "data/brachial-plexus.json" },
-    { "id": "lumbar-plexus", "level": 2, "title": "腰神経叢", "file": "data/lumbar-plexus.json" },
-    { "id": "sacral-plexus", "level": 2, "title": "仙骨神経叢", "file": "data/sacral-plexus.json" },
-    { "id": "cervical-plexus", "level": 2, "title": "頸神経叢", "file": "data/cervical-plexus.json" },
-    { "id": "rotator-cuff", "level": 2, "title": "回旋筋腱板（起始と停止）", "file": "data/rotator-cuff.json" },
-    { "id": "arm-muscles", "level": 2, "title": "上腕の筋（起始と停止）", "file": "data/arm-muscles.json" },
-    { "id": "quadriceps", "level": 2, "title": "大腿四頭筋（起始と停止）", "file": "data/quadriceps.json" }
+    { "id": "aortic-arch", "title": "大動脈弓の分枝", "difficulty": 1, "file": "data/aortic-arch.json" },
+    { "id": "abdominal-aorta", "title": "腹大動脈の主要分枝", "difficulty": 2, "file": "data/abdominal-aorta.json" },
+    { "id": "aorta-iliac", "title": "大動脈から総腸骨動脈", "difficulty": 3, "file": "data/aorta-iliac.json" },
+    { "id": "iliac-artery", "title": "総腸骨動脈", "difficulty": 2, "file": "data/iliac-artery.json" },
+    { "id": "celiac-trunk", "title": "腹腔動脈", "difficulty": 1, "file": "data/celiac-trunk.json" },
+    { "id": "external-carotid", "title": "外頸動脈", "difficulty": 3, "file": "data/external-carotid.json" },
+    { "id": "right-subclavian", "title": "右鎖骨下動脈", "difficulty": 3, "file": "data/right-subclavian.json" },
+    { "id": "brachial-plexus", "level": 2, "title": "腕神経叢", "difficulty": 3, "file": "data/brachial-plexus.json" },
+    { "id": "lumbar-plexus", "level": 2, "title": "腰神経叢", "difficulty": 2, "file": "data/lumbar-plexus.json" },
+    { "id": "sacral-plexus", "level": 2, "title": "仙骨神経叢", "difficulty": 3, "file": "data/sacral-plexus.json" },
+    { "id": "cervical-plexus", "level": 2, "title": "頸神経叢", "difficulty": 2, "file": "data/cervical-plexus.json" },
+    { "id": "rotator-cuff", "level": 2, "title": "回旋筋腱板（起始と停止）", "difficulty": 1, "file": "data/rotator-cuff.json" },
+    { "id": "arm-muscles", "level": 2, "title": "上腕の筋（起始と停止）", "difficulty": 2, "file": "data/arm-muscles.json" },
+    { "id": "quadriceps", "level": 2, "title": "大腿四頭筋（起始と停止）", "difficulty": 1, "file": "data/quadriceps.json" }
   ]
 }

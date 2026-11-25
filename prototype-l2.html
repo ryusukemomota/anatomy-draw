@@ -94,13 +94,16 @@
       <button id="btn-undo" class="secondary">1つ戻す</button>
       <button id="btn-reset" class="secondary">やり直す</button>
       <button id="btn-guide" class="secondary" title="ヒントの量を切り替え">ガイド: 濃い</button>
+      <button id="btn-share" class="secondary" style="display:none">結果をシェア</button>
       <span class="msg" id="msg"></span>
       <span id="score"></span>
     </footer>
 
+    <script src="common.js"></script>
     <script>
       // ============ 設定 ============
       const MANIFEST_URL = "data/manifest.json";
+      const difficultyByFile = {}; // manifest の難易度（ファイル別）
       const VB = 1000;
       const NS = "http://www.w3.org/2000/svg";
       const FP_PENALTY = 0.25; // 余分なエッジ1本あたりの減点（甘め）
@@ -118,6 +121,9 @@
       const GUIDE_LEVELS = ["full", "faint", "off"];
       const GUIDE_LABELS = { full: "ガイド: 濃い", faint: "ガイド: 薄い", off: "ガイド: なし" };
       let guideLevel = "full";
+      // 練習中に使った一番濃いガイド（0=濃い,1=薄い,2=なし）。採点後にガイドを消しても倍率は上がらない
+      let helpUsed = 2;
+      function noteHelp() { helpUsed = Math.min(helpUsed, GUIDE_LEVELS.indexOf(guideLevel)); }
       function cycleGuideLevel() {
         guideLevel = GUIDE_LEVELS[(GUIDE_LEVELS.indexOf(guideLevel) + 1) % GUIDE_LEVELS.length];
         document.getElementById("btn-guide").textContent = GUIDE_LABELS[guideLevel];
@@ -144,7 +150,7 @@
         problem.nodes.forEach((n) => { nodeById[n.id] = n; });
         document.getElementById("title").textContent = (problem.title || "ノード接続") + "（プレビュー）";
         document.getElementById("subtitle").textContent =
-          problem.nodes.length + " 個のノード・未保存のデータ";
+          problem.nodes.length + " 個のノード・未保存のデータ・難易度 " + stars(problem.difficulty || 1);
         reset();
       }
 
@@ -155,6 +161,7 @@
           const res = await fetch(MANIFEST_URL);
           if (!res.ok) throw new Error("HTTP " + res.status);
           const manifest = await res.json();
+          (manifest.problems || []).forEach((p) => { difficultyByFile[p.file] = p.difficulty; });
           const list = (manifest.problems || []).filter((p) => p.level === 2);
           if (list.length === 0) throw new Error("Level 2 の題材がありません");
           sel.innerHTML = "";
@@ -182,11 +189,12 @@
           setMsg("題材データを読めませんでした。詳細: " + e.message, false);
           return;
         }
+        problem.difficulty = difficultyByFile[url] ?? problem.difficulty ?? 1;
         nodeById = {};
         problem.nodes.forEach((n) => { nodeById[n.id] = n; });
         document.getElementById("title").textContent = problem.title || "ノード接続";
         document.getElementById("subtitle").textContent =
-          problem.nodes.length + " 個のノードをつなぐ";
+          problem.nodes.length + " 個のノードをつなぐ・難易度 " + stars(problem.difficulty);
         reset();
       }
 
@@ -253,6 +261,7 @@
 
       // ---- 操作: 1つ目のノード → 2つ目のノードでエッジを引く／消す ----
       function onNode(id) {
+        noteHelp();
         graded = null;
         clearResult();
         if (selected === null) {
@@ -289,9 +298,9 @@
 
         const n = correct.size;
         const raw = (ok.size - FP_PENALTY * bad.size) / n;
-        const score = Math.round(Math.max(0, Math.min(1, raw)) * 100);
-        document.getElementById("score").innerHTML =
-          `スコア <strong>${score}</strong>%<br>正解 ${ok.size}/${n}・余分 ${bad.size}・不足 ${missing.size}`;
+        const accuracy = Math.max(0, Math.min(1, raw));
+        showScoreResult(problem, accuracy, GUIDE_LEVELS[helpUsed],
+          `正解 ${ok.size}/${n}・余分 ${bad.size}・不足 ${missing.size}<br>`);
         if (raw >= PASS) setMsg("よくつなげました！", true);
         else if (raw >= 0.4) setMsg("おしい！緑＝正解、赤＝余分、点線＝不足", false);
         else setMsg("つながりを思い出してみよう（点線が正解）", false);
@@ -304,7 +313,7 @@
         m.className = "msg" + (ok ? " ok" : "");
       }
       function clearResult() {
-        document.getElementById("score").textContent = "";
+        clearScore(problem);
         setMsg("", false);
       }
 
@@ -314,7 +323,7 @@
         render();
       }
       function reset() {
-        userEdges = []; selected = null; graded = null;
+        userEdges = []; selected = null; graded = null; helpUsed = 2;
         clearResult();
         render();
       }

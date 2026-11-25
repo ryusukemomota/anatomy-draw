@@ -55,7 +55,7 @@
       .label { fill: var(--label); font-size: 22px; opacity: 0.85; }
 
       /* ガイドの濃さ3段階（線の濃さを調整。ラベルは位置の手がかりとして常に残す） */
-      #svg.guide-faint .guide-path { opacity: 0.22; }
+      #svg.guide-faint .guide-path { opacity: 0.03; }
       #svg.guide-off .guide-path { opacity: 0; }
       /* 採点後は、ガイドなしでもお手本の形を結果色で表示（ラベルは出さない） */
       #svg.guide-off.graded .guide-path { opacity: 0.5; }
@@ -93,13 +93,16 @@
       <button id="btn-undo" class="secondary">1本戻す</button>
       <button id="btn-reset" class="secondary">やり直す</button>
       <button id="btn-guide" class="secondary" title="お手本の濃さを切り替え">ガイド: 濃い</button>
+      <button id="btn-share" class="secondary" style="display:none">結果をシェア</button>
       <span class="msg" id="msg"></span>
       <span id="score"></span>
     </footer>
 
+    <script src="common.js"></script>
     <script>
       // ============ 設定 ============
-      const MANIFEST_URL = "data/manifest.json"; // 題材一覧
+      const MANIFEST_URL = "data/manifest.json";
+      const difficultyByFile = {}; // manifest の難易度（ファイル別） // 題材一覧
       const VB = 1000; // SVG viewBox の一辺（正規化0-1 → 0..1000 に変換）
 
       const svg = document.getElementById("svg");
@@ -114,6 +117,9 @@
       const GUIDE_LEVELS = ["full", "faint", "off"];
       const GUIDE_LABELS = { full: "ガイド: 濃い", faint: "ガイド: 薄い", off: "ガイド: なし" };
       let guideLevel = "full";
+      // 練習中に使った一番濃いガイド（0=濃い,1=薄い,2=なし）。採点後にガイドを消しても倍率は上がらない
+      let helpUsed = 2;
+      function noteHelp() { helpUsed = Math.min(helpUsed, GUIDE_LEVELS.indexOf(guideLevel)); }
       function applyGuideLevel() {
         svg.classList.remove("guide-full", "guide-faint", "guide-off");
         svg.classList.add("guide-" + guideLevel);
@@ -145,7 +151,7 @@
         reset();
         document.getElementById("title").textContent = (problem.title || "なぞり描き") + "（プレビュー）";
         document.getElementById("subtitle").textContent =
-          (problem.strokes?.length || 0) + " 本の線・未保存のデータ";
+          (problem.strokes?.length || 0) + " 本の線・未保存のデータ・難易度 " + stars(problem.difficulty || 1);
         render();
       }
 
@@ -156,6 +162,7 @@
           const res = await fetch(MANIFEST_URL);
           if (!res.ok) throw new Error("HTTP " + res.status);
           const manifest = await res.json();
+          (manifest.problems || []).forEach((p) => { difficultyByFile[p.file] = p.difficulty; });
           const list = (manifest.problems || []).filter((p) => (p.level || 1) === 1);
           if (list.length === 0) throw new Error("題材が空です");
           sel.innerHTML = "";
@@ -186,10 +193,11 @@
             "題材データを読めませんでした。詳細: " + e.message;
           return;
         }
+        problem.difficulty = difficultyByFile[url] ?? problem.difficulty ?? 1;
         reset();
         document.getElementById("title").textContent = problem.title || "なぞり描き";
         document.getElementById("subtitle").textContent =
-          (problem.strokes?.length || 0) + " 本の線をなぞる";
+          (problem.strokes?.length || 0) + " 本の線をなぞる・難易度 " + stars(problem.difficulty);
         render();
       }
 
@@ -261,6 +269,7 @@
       // ---- なぞり描き（Pointer Events: タッチ/マウス両対応） ----
       svg.addEventListener("pointerdown", (ev) => {
         if (!problem) return;
+        noteHelp();
         drawing = true;
         svg.setPointerCapture(ev.pointerId);
         drawnPoints = [eventToNorm(ev)];
@@ -326,6 +335,53 @@
         return out;
       }
 
+      // 学習者の軌跡を一定間隔で再サンプリング（点の粗さに左右されない逸脱判定用）
+      function resampleDrawn(step = 0.012) {
+        const out = [];
+        for (const stroke of allDrawn) {
+          out.push(stroke[0]);
+          let carry = 0;
+          for (let i = 0; i < stroke.length - 1; i++) {
+            const a = stroke[i], b = stroke[i + 1];
+            const len = Math.hypot(b.x - a.x, b.y - a.y);
+            let d = step - carry;
+            while (d <= len) {
+              const t = d / len;
+              out.push({ x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
+              d += step;
+            }
+            carry = len - (d - step);
+          }
+        }
+        return out;
+      }
+      // 点からお手本（全ストローク）への最短距離
+      function distToGuide(p) {
+        let min = Infinity;
+        for (const s of problem.strokes) {
+          for (let i = 0; i < s.points.length - 1; i++) {
+            const d = distPointToSeg(p, s.points[i], s.points[i + 1]);
+            if (d < min) min = d;
+          }
+        }
+        return min;
+      }
+      // 学習者の軌跡のうち、お手本から devTol を超えて離れた割合（でたらめ塗り対策）
+      function deviationRate(devTol) {
+        const pts = resampleDrawn();
+        if (pts.length === 0) return 0;
+        return pts.filter((p) => distToGuide(p) > devTol).length / pts.length;
+      }
+
+      // 描いた線の総延長がお手本の何倍か。長すぎる（塗りつぶし）ほど 1 から下がる
+      function lengthFactor() {
+        const pathLen = (pts) => pts.reduce((a, p, i) => a + (i ? Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y) : 0), 0);
+        const guideLen = problem.strokes.reduce((a, s) => a + pathLen(s.points), 0);
+        const userLen = allDrawn.reduce((a, s) => a + pathLen(s), 0);
+        if (!guideLen || !userLen) return 1;
+        return Math.min(1, 2.5 / (userLen / guideLen)); // お手本の2.5倍までは減点なし
+      }
+
       function grade() {
         if (!problem) return;
         if (allDrawn.length === 0) {
@@ -345,10 +401,15 @@
         });
         // ガイドなしモードでも、採点後はお手本の形を結果色で見せる
         svg.classList.add("graded");
-        const score = Math.round((coverSum / problem.strokes.length) * 100);
-        document.getElementById("score").innerHTML = `スコア <strong>${score}</strong>%`;
-        if (score >= 70) setMsg("よくなぞれました！", true);
-        else if (score >= 40) setMsg("おしい！もう少し線に沿ってみよう", false);
+        // 正確さ = カバー率 ×（1 − 逸脱率）× 長さ係数。画面を塗りつぶしても高得点にならない
+        const cover = coverSum / problem.strokes.length;
+        const dev = deviationRate(tol * 2);
+        const lf = lengthFactor();
+        const accuracy = cover * (1 - dev) * lf;
+        showScoreResult(problem, accuracy, GUIDE_LEVELS[helpUsed]);
+        if (accuracy >= 0.7) setMsg("よくなぞれました！", true);
+        else if (dev >= 0.4 || lf < 0.7) setMsg("線が多すぎます。お手本に沿って描いてみよう", false);
+        else if (accuracy >= 0.4) setMsg("おしい！もう少し線に沿ってみよう", false);
         else setMsg("お手本の線をなぞってみよう", false);
       }
 
@@ -363,14 +424,14 @@
         if (!problem || drawing) return;
         if (allDrawn.length === 0) { setMsg("消せる線がありません", false); return; }
         allDrawn.pop();
-        document.getElementById("score").textContent = "";
+        clearScore(problem);
         setMsg("", false);
         render(); // お手本の色（緑）もリセットされ、残りの軌跡を描き直す
       }
 
       function reset() {
-        allDrawn = []; drawnPoints = []; drawing = false;
-        document.getElementById("score").textContent = "";
+        allDrawn = []; drawnPoints = []; drawing = false; helpUsed = 2;
+        clearScore(problem);
         setMsg("", false);
         render();
       }
